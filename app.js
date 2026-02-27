@@ -316,30 +316,48 @@ class MessagingApp {
         this.saveAllRooms(rooms);
     }
 
-    joinOrCreateRoom(roomName, password) {
+    // === room management helpers ===
+    joinRoom(roomName, password) {
+        const rooms = this.getAllRooms();
+        if (!rooms[roomName]) {
+            return { success: false, error: 'Room not found' };
+        }
+        if (rooms[roomName].password !== password) {
+            return { success: false, error: 'Incorrect room password' };
+        }
+        if (!rooms[roomName].participants.includes(this.currentUser.username)) {
+            rooms[roomName].participants.push(this.currentUser.username);
+            this.saveAllRooms(rooms);
+        }
+        return { success: true };
+    }
+
+    createRoom(roomName, password) {
         const rooms = this.getAllRooms();
         if (rooms[roomName]) {
-            // existing room: check password
-            if (rooms[roomName].password !== password) {
-                return { success: false, error: 'Incorrect room password' };
-            }
-            if (!rooms[roomName].participants.includes(this.currentUser.username)) {
-                rooms[roomName].participants.push(this.currentUser.username);
-                this.saveAllRooms(rooms);
-            }
-            return { success: true };
+            return { success: false, error: 'Room already exists' };
+        }
+        if (!password) {
+            return { success: false, error: 'Password required to create room' };
+        }
+        rooms[roomName] = {
+            password,
+            participants: [this.currentUser.username],
+            messages: []
+        };
+        this.saveAllRooms(rooms);
+        return { success: true, created: true };
+    }
+
+    // legacy helper kept for compatibility; still used in some places if needed
+    joinOrCreateRoom(roomName, password) {
+        // This combines join and create semantics and is used elsewhere in
+        // the codebase.  We keep it but implement in terms of the new helpers.
+        const rooms = this.getAllRooms();
+        if (rooms[roomName]) {
+            return this.joinRoom(roomName, password);
         } else {
-            // create new room
-            if (!password) {
-                return { success: false, error: 'Password required to create room' };
-            }
-            rooms[roomName] = {
-                password,
-                participants: [this.currentUser.username],
-                messages: []
-            };
-            this.saveAllRooms(rooms);
-            return { success: true, created: true };
+            return this.createRoom(roomName, password);
         }
     }
 
@@ -850,11 +868,32 @@ class MessagingApp {
         });
         document.getElementById('chatTypeSelect').addEventListener('change', (e) => {
             const pwInput = document.getElementById('chatPasswordInput');
+            const actionSelect = document.getElementById('roomActionSelect');
+            const startBtn = document.getElementById('startChatBtn');
+            const helper = document.getElementById('roomHelperText');
             if (e.target.value === 'room') {
                 pwInput.classList.remove('hidden');
+                actionSelect.classList.remove('hidden');
+                helper.classList.remove('hidden');
+                // default to join
+                actionSelect.value = 'join';
+                startBtn.textContent = 'Join Room';
             } else {
                 pwInput.classList.add('hidden');
                 pwInput.value = '';
+                actionSelect.classList.add('hidden');
+                helper.classList.add('hidden');
+                startBtn.textContent = 'Open Chat';
+            }
+        });
+
+        // when user switches between join/create in room mode, update button text
+        document.getElementById('roomActionSelect').addEventListener('change', (e) => {
+            const startBtn = document.getElementById('startChatBtn');
+            if (e.target.value === 'join') {
+                startBtn.textContent = 'Join Room';
+            } else {
+                startBtn.textContent = 'Create Room';
             }
         });
 
@@ -1011,7 +1050,13 @@ class MessagingApp {
             nameInput.value = '';
             this.updateAppUI();
         } else if (type === 'room') {
-            const result = this.joinOrCreateRoom(name, password);
+            const action = document.getElementById('roomActionSelect').value;
+            let result;
+            if (action === 'join') {
+                result = this.joinRoom(name, password);
+            } else {
+                result = this.createRoom(name, password);
+            }
             if (!result.success) {
                 alert(result.error);
                 return;

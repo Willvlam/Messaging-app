@@ -37,10 +37,11 @@ Since everything is stored locally in your browser, different browsers/devices w
 
 ### Rooms (Group Chats)
 1. Select "Room" from the drop‑down in the left sidebar
-2. Enter a room name and set a password
-   - If the room already exists, you will be prompted for its password to join
-   - If it does not exist, a new room will be created with the given password
-3. Everyone in the room can send messages that are visible to all participants
+2. Choose whether you want to **Join** an existing room or **Create** a new one using the extra selector that appears.
+3. Enter the room name and password.
+   - **Joining** requires the room to already exist; entering a non‑existent name will produce an error instead of creating a new room.
+   - **Creating** will fail if the room name is already taken.
+4. Everyone in the room can send messages that are visible to all participants
    - You can also exchange photos/files using the file picker beside the text box
    - You can invite friends from the room header using the friends dropdown
 4. Once you join, your account remains a member of the room until you leave it
