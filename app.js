@@ -895,6 +895,7 @@ class MessagingApp {
     }
 
     handleSendMessage() {
+        console.log('handleSendMessage called');
         const input = document.getElementById('messageInput');
         const text = input.value;
 
@@ -912,7 +913,14 @@ class MessagingApp {
     }
 
     handleSendFile() {
+        console.log('handleSendFile called');
         const fileInput = document.getElementById('fileInput');
+        if (!(fileInput && fileInput.files && fileInput.files[0])) {
+            console.log('no file selected');
+        }
+        if (!this.currentChat) {
+            console.log('no current chat');
+        }
         if (!(fileInput && fileInput.files && fileInput.files[0]) || !this.currentChat) {
             return;
         }
