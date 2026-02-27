@@ -283,7 +283,7 @@ class MessagingApp {
         return [];
     }
 
-    saveRoomMessage(roomName, from, text) {
+    saveRoomMessage(roomName, from, content) {
         const rooms = this.getAllRooms();
         if (!rooms[roomName]) {
             return;
@@ -291,11 +291,11 @@ class MessagingApp {
         if (!rooms[roomName].messages) {
             rooms[roomName].messages = [];
         }
-        rooms[roomName].messages.push({
+        const msg = Object.assign({
             from,
-            text,
             timestamp: new Date().toISOString()
-        });
+        }, content);
+        rooms[roomName].messages.push(msg);
         this.saveAllRooms(rooms);
     }
 
@@ -356,7 +356,7 @@ class MessagingApp {
         return allMessages[key] || [];
     }
 
-    saveMessage(from, to, text) {
+    saveMessage(from, to, content) {
         const key = this.getConversationKey(from, to);
         const allMessages = this.getAllMessages();
 
@@ -364,22 +364,28 @@ class MessagingApp {
             allMessages[key] = [];
         }
 
-        allMessages[key].push({
+        // content may be {type:'text',text:...} or {type:'file',filename:...,data:...}
+        const msg = Object.assign({
             from,
             to,
-            text,
             timestamp: new Date().toISOString()
-        });
+        }, content);
 
+        allMessages[key].push(msg);
         this.saveAllMessages(allMessages);
     }
 
-    sendMessage(text) {
+    sendTextMessage(text) {
         if (!this.currentChat || !text.trim()) {
             return false;
         }
+        this.saveMessage(this.currentUser.username, this.currentChat, { type: 'text', text });
+        return true;
+    }
 
-        this.saveMessage(this.currentUser.username, this.currentChat, text);
+    sendFileMessage(fileObj) {
+        if (!this.currentChat || !fileObj) return false;
+        this.saveMessage(this.currentUser.username, this.currentChat, Object.assign({ type: 'file' }, fileObj));
         return true;
     }
 
@@ -727,7 +733,28 @@ class MessagingApp {
 
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
-            bubble.textContent = msg.text;
+            if (msg.type === 'file') {
+                // determine if image
+                if (msg.data && msg.data.startsWith('data:image')) {
+                    const img = document.createElement('img');
+                    img.src = msg.data;
+                    img.style.maxWidth = '200px';
+                    img.style.maxHeight = '200px';
+                    bubble.appendChild(img);
+                    const name = document.createElement('div');
+                    name.textContent = msg.filename;
+                    name.style.fontSize = '12px';
+                    bubble.appendChild(name);
+                } else {
+                    const link = document.createElement('a');
+                    link.href = msg.data;
+                    link.textContent = msg.filename || 'file';
+                    link.download = msg.filename;
+                    bubble.appendChild(link);
+                }
+            } else {
+                bubble.textContent = msg.text;
+            }
 
             const timestamp = document.createElement('div');
             timestamp.className = 'message-timestamp';
@@ -862,18 +889,38 @@ class MessagingApp {
 
     handleSendMessage() {
         const input = document.getElementById('messageInput');
+        const fileInput = document.getElementById('fileInput');
         const text = input.value;
+
+        // if file selected send file instead
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = e.target.result;
+                const fileObj = { filename: file.name, data };
+                if (this.currentChatType === 'room') {
+                    this.saveRoomMessage(this.currentChat, this.currentUser.username, fileObj);
+                } else {
+                    this.sendFileMessage(fileObj);
+                }
+                fileInput.value = '';
+                this.renderMessages();
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
 
         if (!text.trim() || !this.currentChat) {
             return;
         }
 
         if (this.currentChatType === 'room') {
-            this.saveRoomMessage(this.currentChat, this.currentUser.username, text);
+            this.saveRoomMessage(this.currentChat, this.currentUser.username, { type: 'text', text });
             input.value = '';
             this.renderMessages();
         } else {
-            if (this.sendMessage(text)) {
+            if (this.sendTextMessage(text)) {
                 input.value = '';
                 this.renderMessages();
             }

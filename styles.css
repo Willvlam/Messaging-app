@@ -470,6 +470,16 @@ body {
     line-height: 1.4;
 }
 
+.message-bubble img {
+    max-width: 100%;
+    border-radius: 6px;
+}
+
+.message-bubble a {
+    color: #337ab7;
+    text-decoration: underline;
+}
+
 .message.sent .message-bubble {
     background: #667eea;
     color: white;
@@ -495,6 +505,13 @@ body {
     border-top: 1px solid #e9ecef;
     display: flex;
     gap: 10px;
+    align-items: center;
+}
+
+.file-input {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 14px;
 }
 
 .message-input-area .input-field {

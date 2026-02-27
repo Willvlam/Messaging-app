@@ -24,47 +24,13 @@ This app uses browser `localStorage` to store:
 
 Since everything is stored locally in your browser, different browsers/devices won't sync automatically. QR export/import lets you manually transfer data between devices.
 
-## Deployment to GitHub Pages
-
-### Step 1: Push to GitHub
-If you haven't already, push this project to GitHub:
-```bash
-git add .
-git commit -m "Add messaging app"
-git push
-```
-
-### Step 2: Enable GitHub Pages
-1. Go to your repository on GitHub
-2. Click on **Settings**
-3. Scroll down to **Pages** section
-4. Under "Source", select `main` branch
-5. The site will be published at: `https://yourusername.github.io/Messaging-app`
-
-### Step 3: Access Your App
-Visit `https://yourusername.github.io/Messaging-app` in your browser
-
-## Usage
-
-### Create an Account
-1. Click "Sign Up" on the login page
-2. Enter a username (min 3 characters)
-3. Enter a password (min 6 characters)
-4. Confirm your password
-
-### Add Friends
-1. After logging in, use the **Friends** panel on the left
-2. Enter a username and click **Add Friend**
-3. This sends a friend request to that user; they must accept it
-4. When they accept, you'll both appear in each other's friend lists and the chat autocomplete
-
-Pending incoming requests appear at the top of the Friends panel, where you can **Accept** or **Decline** them. Requests you've sent are also shown under a "Pending (sent)" header, and you may cancel them if needed.
-
 ### Direct Messages
 1. Log in to your account
 2. In the left sidebar, choose "User" from the drop‑down
 3. Enter the other person's username and click "Open Chat"
 4. Type your message and click "Send" or press Enter
+5. To send a photo or file, click the **Choose File** control next to the message box. The file will be uploaded and displayed inline (images) or as a download link.
+   - On mobile, you can also take a photo using the camera option in the file picker.
 
 ### Rooms (Group Chats)
 1. Select "Room" from the drop‑down in the left sidebar
@@ -72,6 +38,7 @@ Pending incoming requests appear at the top of the Friends panel, where you can 
    - If the room already exists, you will be prompted for its password to join
    - If it does not exist, a new room will be created with the given password
 3. Everyone in the room can send messages that are visible to all participants
+   - You can also exchange photos/files using the file picker beside the text box
    - You can invite friends from the room header using the friends dropdown
 4. Once you join, your account remains a member of the room until you leave it
 5. To leave the room, click the "Leave" button next to the room in the conversations list; if you're the last person to leave, the room is deleted
@@ -122,4 +89,5 @@ Pending incoming requests appear at the top of the Friends panel, where you can 
 
 ---
 
-**Made with ❤️ for private, decentralized messaging**
+**for private, decentralized messaging**
+** i hope you like it!**
