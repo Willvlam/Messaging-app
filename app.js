@@ -735,10 +735,14 @@ class MessagingApp {
 
         messages.forEach(msg => {
             // debug: who sent this? helps verify "You" logic
-            console.log('rendering msg', msg.from, 'current user', this.currentUser && this.currentUser.username, 'own?', msg.from === (this.currentUser && this.currentUser.username));
+            console.log('rendering msg', msg.from, 'current user', this.currentUser && this.currentUser.username);
+
+            const sent = this.currentUser && msg.from &&
+                (msg.from === this.currentUser.username ||
+                 msg.from.toLowerCase() === this.currentUser.username.toLowerCase());
 
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${msg.from === this.currentUser.username ? 'sent' : 'received'}`;
+            messageDiv.className = `message ${sent ? 'sent' : 'received'}`;
 
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
@@ -773,7 +777,11 @@ class MessagingApp {
             // show sender name ("You" for own messages, otherwise @username) under timestamp
             const senderDiv = document.createElement('div');
             senderDiv.className = 'message-sender';
-            senderDiv.textContent = msg.from === this.currentUser.username ? 'You' : '@' + msg.from;
+            if (sent) {
+                senderDiv.textContent = 'You';
+            } else {
+                senderDiv.textContent = '@' + msg.from;
+            }
 
             messageDiv.appendChild(bubble);
             messageDiv.appendChild(timestamp);
