@@ -734,6 +734,9 @@ class MessagingApp {
         }
 
         messages.forEach(msg => {
+            // debug: who sent this? helps verify "You" logic
+            console.log('rendering msg', msg.from, 'current user', this.currentUser && this.currentUser.username, 'own?', msg.from === (this.currentUser && this.currentUser.username));
+
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${msg.from === this.currentUser.username ? 'sent' : 'received'}`;
 

@@ -463,9 +463,14 @@ body {
 
 .message-sender {
     font-size: 11px;
-    color: #555;
+    color: #333; /* darker for contrast */
     /* now placed below timestamp, so add a little top margin */
     margin-top: 2px;
+}
+
+/* make sure label always appears on its own line */
+.message-sender {
+    display: block;
 }
 
 /* distinguish own label with a slightly stronger weight */
