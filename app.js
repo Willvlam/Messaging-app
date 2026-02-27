@@ -737,6 +737,12 @@ class MessagingApp {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${msg.from === this.currentUser.username ? 'sent' : 'received'}`;
 
+            // show sender name ("You" for own messages, otherwise @username)
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'message-sender';
+            senderDiv.textContent = msg.from === this.currentUser.username ? 'You' : '@' + msg.from;
+            messageDiv.appendChild(senderDiv);
+
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
             if (msg.type === 'file') {
