@@ -868,32 +868,22 @@ class MessagingApp {
         });
         document.getElementById('chatTypeSelect').addEventListener('change', (e) => {
             const pwInput = document.getElementById('chatPasswordInput');
-            const actionSelect = document.getElementById('roomActionSelect');
-            const startBtn = document.getElementById('startChatBtn');
             const helper = document.getElementById('roomHelperText');
-            if (e.target.value === 'room') {
+            const startBtn = document.getElementById('startChatBtn');
+            if (e.target.value.startsWith('room-')) {
                 pwInput.classList.remove('hidden');
-                actionSelect.classList.remove('hidden');
                 helper.classList.remove('hidden');
-                // default to join
-                actionSelect.value = 'join';
-                startBtn.textContent = 'Join Room';
+                // adjust button text based on create/join
+                if (e.target.value === 'room-join') {
+                    startBtn.textContent = 'Join Room';
+                } else {
+                    startBtn.textContent = 'Create Room';
+                }
             } else {
                 pwInput.classList.add('hidden');
                 pwInput.value = '';
-                actionSelect.classList.add('hidden');
                 helper.classList.add('hidden');
                 startBtn.textContent = 'Open Chat';
-            }
-        });
-
-        // when user switches between join/create in room mode, update button text
-        document.getElementById('roomActionSelect').addEventListener('change', (e) => {
-            const startBtn = document.getElementById('startChatBtn');
-            if (e.target.value === 'join') {
-                startBtn.textContent = 'Join Room';
-            } else {
-                startBtn.textContent = 'Create Room';
             }
         });
 
