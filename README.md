@@ -9,7 +9,7 @@ A private messaging application that runs entirely in the browser using GitHub P
  **Room Passwords** - You name a room and give it a password; others must enter it to join
  **Friend System** - Add people as friends and easily invite them to chats / rooms
  **Message Storage** - All messages are saved locally in your browser
- **Sender Labels** - Each message shows who sent it; your messages display as “You”
+ **Sender Labels** - Each message shows who sent it (the label appears beneath the time); your messages display as “You”
  **Multiple Conversations** - Chat with multiple people or rooms
  **Persistent Membership** - Once you join a room, your account stays in it until you leave
  **QR Sync** - Export your entire data set to a QR code and scan it on another device to transfer accounts, rooms, and messages

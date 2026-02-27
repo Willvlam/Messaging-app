@@ -737,12 +737,6 @@ class MessagingApp {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${msg.from === this.currentUser.username ? 'sent' : 'received'}`;
 
-            // show sender name ("You" for own messages, otherwise @username)
-            const senderDiv = document.createElement('div');
-            senderDiv.className = 'message-sender';
-            senderDiv.textContent = msg.from === this.currentUser.username ? 'You' : '@' + msg.from;
-            messageDiv.appendChild(senderDiv);
-
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
             if (msg.type === 'file') {
@@ -773,8 +767,14 @@ class MessagingApp {
             const date = new Date(msg.timestamp);
             timestamp.textContent = this.formatTime(date);
 
+            // show sender name ("You" for own messages, otherwise @username) under timestamp
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'message-sender';
+            senderDiv.textContent = msg.from === this.currentUser.username ? 'You' : '@' + msg.from;
+
             messageDiv.appendChild(bubble);
             messageDiv.appendChild(timestamp);
+            messageDiv.appendChild(senderDiv);
             container.appendChild(messageDiv);
         });
 
