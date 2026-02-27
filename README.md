@@ -7,6 +7,7 @@ A private messaging application that runs entirely in the browser using GitHub P
  **Account Creation** - Create accounts with username and password protection
  **Direct Messages & Rooms** - Chat one-on-one or create password-protected rooms
  **Room Passwords** - You name a room and give it a password; others must enter it to join
+ **Auto‑cleanup** - Rooms are automatically deleted when their last participant leaves
  **Friend System** - Add people as friends and easily invite them to chats / rooms
  **Message Storage** - All messages are saved locally in your browser
  **Sender Labels** - Each message shows who sent it (the label appears beneath the time); your messages display as “You”.

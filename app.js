@@ -263,7 +263,20 @@ class MessagingApp {
     // ===== Room helpers =====
     getAllRooms() {
         const stored = localStorage.getItem(this.ROOMS_KEY);
-        return stored ? JSON.parse(stored) : {};
+        const rooms = stored ? JSON.parse(stored) : {};
+        // automatically remove any room that has no participants
+        let changed = false;
+        for (const name in rooms) {
+            const parts = rooms[name].participants || [];
+            if (parts.length === 0) {
+                delete rooms[name];
+                changed = true;
+            }
+        }
+        if (changed) {
+            this.saveAllRooms(rooms);
+        }
+        return rooms;
     }
 
     saveAllRooms(rooms) {
