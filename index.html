@@ -65,10 +65,18 @@
                             <option value="user">User</option>
                             <option value="room">Room</option>
                         </select>
+                        <!-- when chatting with rooms, allow user to choose join vs create -->
+                        <select id="roomActionSelect" class="input-field hidden">
+                            <option value="join">Join Room</option>
+                            <option value="create">Create Room</option>
+                        </select>
                         <input list="friendList" type="text" id="chatNameInput" placeholder="Enter username or room name" class="input-field">
                         <datalist id="friendList"></datalist>
                         <input type="password" id="chatPasswordInput" placeholder="Room password (required for rooms)" class="input-field hidden">
-                        <button id="startChatBtn" class="btn btn-primary">Open Chat / Join Room</button>
+                        <button id="startChatBtn" class="btn btn-primary">Open Chat</button>
+                        <div id="chatHelper" style="font-size:12px;color:#666;margin-top:6px;">
+                            <span id="roomHelperText" class="hidden">When creating a room you must provide a password. When joining, enter the exact name and password of an existing room.</span>
+                        </div>
                     </div>
 
                     <h3>Conversations</h3>
