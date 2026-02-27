@@ -800,6 +800,7 @@ class MessagingApp {
 
         // Message input
         document.getElementById('sendBtn').addEventListener('click', () => this.handleSendMessage());
+        document.getElementById('sendFileBtn').addEventListener('click', () => this.handleSendFile());
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.handleSendMessage();
@@ -895,44 +896,7 @@ class MessagingApp {
 
     handleSendMessage() {
         const input = document.getElementById('messageInput');
-        const fileInput = document.getElementById('fileInput');
         const text = input.value;
-
-        // if file selected send file instead
-        if (fileInput && fileInput.files && fileInput.files[0]) {
-            const file = fileInput.files[0];
-            // simple size limit (5MB) to avoid quota
-            const maxSize = 5 * 1024 * 1024;
-            if (file.size > maxSize) {
-                alert('File too large (max 5MB)');
-                fileInput.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const data = e.target.result;
-                const fileObj = { type: 'file', filename: file.name, data };
-                try {
-                    if (this.currentChatType === 'room') {
-                        this.saveRoomMessage(this.currentChat, this.currentUser.username, fileObj);
-                    } else {
-                        this.sendFileMessage(fileObj);
-                    }
-                } catch (err) {
-                    console.error('error saving file message', err);
-                    alert('Failed to save file (storage limit?)');
-                }
-                fileInput.value = '';
-                this.renderMessages();
-            };
-            reader.onerror = (err) => {
-                console.error('file reader error', err);
-                alert('Failed to read file');
-            };
-            reader.readAsDataURL(file);
-            return;
-        }
 
         if (!text.trim() || !this.currentChat) {
             return;
@@ -940,14 +904,47 @@ class MessagingApp {
 
         if (this.currentChatType === 'room') {
             this.saveRoomMessage(this.currentChat, this.currentUser.username, { type: 'text', text });
-            input.value = '';
-            this.renderMessages();
         } else {
-            if (this.sendTextMessage(text)) {
-                input.value = '';
-                this.renderMessages();
-            }
+            this.sendTextMessage(text);
         }
+        input.value = '';
+        this.renderMessages();
+    }
+
+    handleSendFile() {
+        const fileInput = document.getElementById('fileInput');
+        if (!(fileInput && fileInput.files && fileInput.files[0]) || !this.currentChat) {
+            return;
+        }
+        const file = fileInput.files[0];
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert('File too large (max 5MB)');
+            fileInput.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = e.target.result;
+            const fileObj = { type: 'file', filename: file.name, data };
+            try {
+                if (this.currentChatType === 'room') {
+                    this.saveRoomMessage(this.currentChat, this.currentUser.username, fileObj);
+                } else {
+                    this.sendFileMessage(fileObj);
+                }
+            } catch (err) {
+                console.error('error saving file message', err);
+                alert('Failed to save file (storage limit?)');
+            }
+            fileInput.value = '';
+            this.renderMessages();
+        };
+        reader.onerror = (err) => {
+            console.error('file reader error', err);
+            alert('Failed to read file');
+        };
+        reader.readAsDataURL(file);
     }
 
     handleStartChat() {

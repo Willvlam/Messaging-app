@@ -514,6 +514,15 @@ body {
     font-size: 14px;
 }
 
+#sendFileBtn {
+    background: #6c757d;
+    color: white;
+}
+
+#sendFileBtn:hover {
+    background: #5a6268;
+}
+
 .message-input-area .input-field {
     flex: 1;
     margin-bottom: 0;

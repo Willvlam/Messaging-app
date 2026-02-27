@@ -29,7 +29,8 @@ Since everything is stored locally in your browser, different browsers/devices w
 2. In the left sidebar, choose "User" from the drop‑down
 3. Enter the other person's username and click "Open Chat"
 4. Type your message and click "Send" or press Enter
-5. To send a photo or file, click the **Choose File** control next to the message box. The file will be uploaded and displayed inline (images) or as a download link. Files are limited to about 5 MB to prevent running out of browser storage.
+5. Type your message and click **Send** or press Enter.
+6. To share a photo or file use the **Choose File** control, then click the new **Send File** button. The file will be uploaded and displayed inline (images) or as a download link. Files are limited to about 5 MB to prevent running out of browser storage.
    - On mobile, you can also take a photo using the camera option in the file picker.
 
 ### Rooms (Group Chats)
