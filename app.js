@@ -38,7 +38,11 @@ class MessagingApp {
     // =====================
 
     loadCurrentUser() {
-        const stored = localStorage.getItem('current_user');
+        // use sessionStorage instead of localStorage so each browser tab
+        // requires a separate login session. localStorage is shared across
+        // tabs, which allowed the user to stay logged in when opening a new
+        // tab. Switching to sessionStorage keeps the state per-tab.
+        const stored = sessionStorage.getItem('current_user');
         if (stored) {
             this.currentUser = JSON.parse(stored);
         }
@@ -46,7 +50,7 @@ class MessagingApp {
 
     saveCurrentUser() {
         if (this.currentUser) {
-            localStorage.setItem('current_user', JSON.stringify(this.currentUser));
+            sessionStorage.setItem('current_user', JSON.stringify(this.currentUser));
         }
     }
 
@@ -247,7 +251,7 @@ class MessagingApp {
         this.currentUser = null;
         this.currentChat = null;
         this.currentChatType = 'user';
-        localStorage.removeItem('current_user');
+        sessionStorage.removeItem('current_user');
         this.render();
     }
 

@@ -62,7 +62,7 @@ Since everything is stored locally in your browser, different browsers/devices w
 ## Technical Details
 
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **Storage**: Browser localStorage (persists across sessions)
+- **Storage**: Browser sessionStorage for auth (requires login per tab); localStorage for other app data
 - **No Backend**: Everything runs locally in the browser
 - **Browser Compatibility**: Works in all modern browsers (Chrome, Firefox, Safari, Edge)
 
@@ -73,6 +73,8 @@ Since everything is stored locally in your browser, different browsers/devices w
 - Room passwords are also stored in localStorage
 - If someone gets access to your device, they can access your messages
 - For true security, consider using passwords carefully and clearing browser data when needed
+
+> **Note:** Authentication state is now stored in `sessionStorage`, which is unique to each browser tab. You will be prompted to log in every time you open the app in a new tab or after closing one.
 
 ## File Structure
 
