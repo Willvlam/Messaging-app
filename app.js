@@ -38,10 +38,6 @@ class MessagingApp {
     // =====================
 
     loadCurrentUser() {
-        // use sessionStorage instead of localStorage so each browser tab
-        // requires a separate login session. localStorage is shared across
-        // tabs, which allowed the user to stay logged in when opening a new
-        // tab. Switching to sessionStorage keeps the state per-tab.
         const stored = sessionStorage.getItem('current_user');
         if (stored) {
             this.currentUser = JSON.parse(stored);
@@ -118,7 +114,6 @@ class MessagingApp {
         if (toUsername === this.currentUser.username) {
             return { success: false, error: 'Cannot friend yourself' };
         }
-        // already friends?
         const friends = this.getFriendsForCurrent();
         if (friends.includes(toUsername)) {
             return { success: false, error: 'Already friends' };
@@ -140,12 +135,9 @@ class MessagingApp {
         if (!arr.includes(fromUsername)) {
             return { success: false, error: 'No such request' };
         }
-        // remove request
         requests[this.currentUser.username] = arr.filter(u => u !== fromUsername);
         this.saveAllFriendRequests(requests);
-        // add each other as friends
         this.addFriend(fromUsername);
-        // also add current user to other person's list
         const allFriends = this.getAllFriends();
         if (!allFriends[fromUsername]) allFriends[fromUsername] = [];
         if (!allFriends[fromUsername].includes(this.currentUser.username)) {
@@ -197,53 +189,40 @@ class MessagingApp {
     }
 
     signup(username, password) {
-        // Validation
         if (!username || !password) {
             return { success: false, error: 'Username and password required' };
         }
-
         if (username.length < 3) {
             return { success: false, error: 'Username must be at least 3 characters' };
         }
-
         if (password.length < 6) {
             return { success: false, error: 'Password must be at least 6 characters' };
         }
-
         const users = this.getAllUsers();
-
         if (users[username]) {
             return { success: false, error: 'Username already exists' };
         }
-
-        // Create user (in real app, password would be hashed)
         users[username] = {
             username,
-            password, // Note: In production, this should be hashed
+            password,
             createdAt: new Date().toISOString()
         };
-
         this.saveAllUsers(users);
         this.currentUser = { username };
         this.saveCurrentUser();
-
         return { success: true };
     }
 
     login(username, password) {
         const users = this.getAllUsers();
-
         if (!users[username]) {
             return { success: false, error: 'User not found' };
         }
-
         if (users[username].password !== password) {
             return { success: false, error: 'Incorrect password' };
         }
-
         this.currentUser = { username };
         this.saveCurrentUser();
-
         return { success: true };
     }
 
@@ -268,7 +247,6 @@ class MessagingApp {
     getAllRooms() {
         const stored = localStorage.getItem(this.ROOMS_KEY);
         const rooms = stored ? JSON.parse(stored) : {};
-        // automatically remove any room that has no participants
         let changed = false;
         for (const name in rooms) {
             const parts = rooms[name].participants || [];
@@ -302,9 +280,7 @@ class MessagingApp {
 
     saveRoomMessage(roomName, from, content) {
         const rooms = this.getAllRooms();
-        if (!rooms[roomName]) {
-            return;
-        }
+        if (!rooms[roomName]) return;
         if (!rooms[roomName].messages) {
             rooms[roomName].messages = [];
         }
@@ -316,7 +292,6 @@ class MessagingApp {
         this.saveAllRooms(rooms);
     }
 
-    // === room management helpers ===
     joinRoom(roomName, password) {
         const rooms = this.getAllRooms();
         if (!rooms[roomName]) {
@@ -349,10 +324,7 @@ class MessagingApp {
         return { success: true, created: true };
     }
 
-    // legacy helper kept for compatibility; still used in some places if needed
     joinOrCreateRoom(roomName, password) {
-        // This combines join and create semantics and is used elsewhere in
-        // the codebase.  We keep it but implement in terms of the new helpers.
         const rooms = this.getAllRooms();
         if (rooms[roomName]) {
             return this.joinRoom(roomName, password);
@@ -394,26 +366,20 @@ class MessagingApp {
     saveMessage(from, to, content) {
         const key = this.getConversationKey(from, to);
         const allMessages = this.getAllMessages();
-
         if (!allMessages[key]) {
             allMessages[key] = [];
         }
-
-        // content may be {type:'text',text:...} or {type:'file',filename:...,data:...}
         const msg = Object.assign({
             from,
             to,
             timestamp: new Date().toISOString()
         }, content);
-
         allMessages[key].push(msg);
         this.saveAllMessages(allMessages);
     }
 
     sendTextMessage(text) {
-        if (!this.currentChat || !text.trim()) {
-            return false;
-        }
+        if (!this.currentChat || !text.trim()) return false;
         this.saveMessage(this.currentUser.username, this.currentChat, { type: 'text', text });
         return true;
     }
@@ -433,7 +399,6 @@ class MessagingApp {
     getDirectConversations() {
         const allMessages = this.getAllMessages();
         const conversations = new Set();
-
         for (const key in allMessages) {
             const [user1, user2] = key.split('_');
             const otherUser = user1 === this.currentUser.username ? user2 : user1;
@@ -441,22 +406,14 @@ class MessagingApp {
                 conversations.add(otherUser);
             }
         }
-
-        // also include friends even if no messages
         const friends = this.getFriendsForCurrent();
         friends.forEach(f => conversations.add(f));
-
         return Array.from(conversations).sort();
     }
 
-    /**
-     * Combined list of chat targets (direct users and rooms).
-     * Each entry is { name, type } where type is 'user' or 'room'.
-     */
     getConversations() {
         const directs = this.getDirectConversations().map(u => ({ name: u, type: 'user' }));
         const rooms = this.getUserRooms().map(r => ({ name: r, type: 'room' }));
-        // Optionally sort by type or name; keep rooms first for clarity
         return [...rooms, ...directs];
     }
 
@@ -474,7 +431,6 @@ class MessagingApp {
     updateAuthUI() {
         const authContainer = document.getElementById('authContainer');
         const appContainer = document.getElementById('appContainer');
-
         if (this.currentUser) {
             authContainer.classList.add('hidden');
             appContainer.classList.remove('hidden');
@@ -515,7 +471,6 @@ class MessagingApp {
         inviteSelect.innerHTML = '';
         reqList.innerHTML = '';
 
-        // render incoming requests
         if (requests.length > 0) {
             const header = document.createElement('div');
             header.style.fontSize = '13px';
@@ -547,7 +502,7 @@ class MessagingApp {
                 reqList.appendChild(item);
             });
         }
-        // outgoing requests
+
         const outgoing = this.getOutgoingFriendRequests();
         if (outgoing.length > 0) {
             const hdr2 = document.createElement('div');
@@ -598,14 +553,11 @@ class MessagingApp {
 
     handleAddFriend(name) {
         const errorEl = document.getElementById('addFriendError');
-        if (!name) {
-            return;
-        }
+        if (!name) return;
         const result = this.sendFriendRequest(name);
         if (result.success) {
             document.getElementById('addFriendInput').value = '';
             if (errorEl) errorEl.textContent = 'Request sent';
-            // refresh to show outgoing requests? we don't track outgoing currently
             this.updateFriendsList();
         } else {
             if (errorEl) errorEl.textContent = result.error;
@@ -697,19 +649,14 @@ class MessagingApp {
     }
 
     deleteConversation(username) {
-        if (!confirm(`Delete all messages with @${username}?`)) {
-            return;
-        }
-
+        if (!confirm(`Delete all messages with @${username}?`)) return;
         const key = this.getConversationKey(this.currentUser.username, username);
         const allMessages = this.getAllMessages();
         delete allMessages[key];
         this.saveAllMessages(allMessages);
-
         if (this.currentChat === username) {
             this.currentChat = null;
         }
-
         this.updateAppUI();
     }
 
@@ -729,10 +676,8 @@ class MessagingApp {
         const chatWithElement = document.getElementById('chatWith');
         chatWithElement.textContent = (this.currentChatType === 'room' ? '#' : '@') + this.currentChat;
 
-        // room invite UI
         const inviteSection = document.getElementById('roomInviteSection');
         if (this.currentChatType === 'room' && inviteSection) {
-            // only show if there are friends not already in room
             const friends = this.getFriendsForCurrent();
             const room = this.getAllRooms()[this.currentChat] || { participants: [] };
             const avail = friends.filter(f => !room.participants.includes(f));
@@ -769,9 +714,6 @@ class MessagingApp {
         }
 
         messages.forEach(msg => {
-            // debug: who sent this? helps verify "You" logic
-            console.log('rendering msg', msg.from, 'current user', this.currentUser && this.currentUser.username);
-
             const sent = this.currentUser && msg.from &&
                 (msg.from === this.currentUser.username ||
                  msg.from.toLowerCase() === this.currentUser.username.toLowerCase());
@@ -782,7 +724,6 @@ class MessagingApp {
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
             if (msg.type === 'file') {
-                // determine if image
                 if (msg.data && msg.data.startsWith('data:image')) {
                     const img = document.createElement('img');
                     img.src = msg.data;
@@ -809,14 +750,9 @@ class MessagingApp {
             const date = new Date(msg.timestamp);
             timestamp.textContent = this.formatTime(date);
 
-            // show sender name ("You" for own messages, otherwise @username) under timestamp
             const senderDiv = document.createElement('div');
             senderDiv.className = 'message-sender';
-            if (sent) {
-                senderDiv.textContent = 'You';
-            } else {
-                senderDiv.textContent = '@' + msg.from;
-            }
+            senderDiv.textContent = sent ? 'You' : '@' + msg.from;
 
             messageDiv.appendChild(bubble);
             messageDiv.appendChild(timestamp);
@@ -824,7 +760,6 @@ class MessagingApp {
             container.appendChild(messageDiv);
         });
 
-        // Scroll to bottom
         container.scrollTop = container.scrollHeight;
     }
 
@@ -845,40 +780,34 @@ class MessagingApp {
     // =====================
 
     initializeEventListeners() {
-        // Auth buttons
         document.getElementById('loginBtn').addEventListener('click', () => this.handleLogin());
         document.getElementById('signupBtn').addEventListener('click', () => this.handleSignup());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
 
-        // Message input
         document.getElementById('sendBtn').addEventListener('click', () => this.handleSendMessage());
         document.getElementById('sendFileBtn').addEventListener('click', () => this.handleSendFile());
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.handleSendMessage();
-            }
+            if (e.key === 'Enter') this.handleSendMessage();
         });
 
-        // New message / room
         document.getElementById('startChatBtn').addEventListener('click', () => this.handleStartChat());
         document.getElementById('chatNameInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.handleStartChat();
-            }
+            if (e.key === 'Enter') this.handleStartChat();
         });
+
         document.getElementById('chatTypeSelect').addEventListener('change', (e) => {
             const pwInput = document.getElementById('chatPasswordInput');
             const helper = document.getElementById('roomHelperText');
             const startBtn = document.getElementById('startChatBtn');
-            if (e.target.value.startsWith('room-')) {
+            const val = e.target.value;
+            if (val === 'room-create') {
                 pwInput.classList.remove('hidden');
                 helper.classList.remove('hidden');
-                // adjust button text based on create/join
-                if (e.target.value === 'room-join') {
-                    startBtn.textContent = 'Join Room';
-                } else {
-                    startBtn.textContent = 'Create Room';
-                }
+                startBtn.textContent = 'Create Room';
+            } else if (val === 'room-join') {
+                pwInput.classList.remove('hidden');
+                helper.classList.remove('hidden');
+                startBtn.textContent = 'Join Room';
             } else {
                 pwInput.classList.add('hidden');
                 pwInput.value = '';
@@ -887,7 +816,6 @@ class MessagingApp {
             }
         });
 
-        // Friends controls
         document.getElementById('addFriendBtn').addEventListener('click', () => {
             const name = document.getElementById('addFriendInput').value.trim();
             this.handleAddFriend(name);
@@ -900,7 +828,6 @@ class MessagingApp {
         });
         document.getElementById('inviteFriendBtn').addEventListener('click', () => this.handleInviteFriend());
 
-        // QR export/import controls
         document.getElementById('exportQrBtn').addEventListener('click', () => this.showQrExportModal());
         document.getElementById('importQrBtn').addEventListener('click', () => this.showQrImportModal());
         document.getElementById('downloadQrBtn').addEventListener('click', () => {
@@ -920,9 +847,7 @@ class MessagingApp {
         const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
         const errorDiv = document.getElementById('loginError');
-
         const result = this.login(username, password);
-
         if (result.success) {
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
@@ -938,14 +863,11 @@ class MessagingApp {
         const password = document.getElementById('signupPassword').value;
         const password2 = document.getElementById('signupPassword2').value;
         const errorDiv = document.getElementById('signupError');
-
         if (password !== password2) {
             errorDiv.textContent = 'Passwords do not match';
             return;
         }
-
         const result = this.signup(username, password);
-
         if (result.success) {
             document.getElementById('signupUsername').value = '';
             document.getElementById('signupPassword').value = '';
@@ -958,14 +880,9 @@ class MessagingApp {
     }
 
     handleSendMessage() {
-        console.log('handleSendMessage called');
         const input = document.getElementById('messageInput');
         const text = input.value;
-
-        if (!text.trim() || !this.currentChat) {
-            return;
-        }
-
+        if (!text.trim() || !this.currentChat) return;
         if (this.currentChatType === 'room') {
             this.saveRoomMessage(this.currentChat, this.currentUser.username, { type: 'text', text });
         } else {
@@ -976,17 +893,8 @@ class MessagingApp {
     }
 
     handleSendFile() {
-        console.log('handleSendFile called');
         const fileInput = document.getElementById('fileInput');
-        if (!(fileInput && fileInput.files && fileInput.files[0])) {
-            console.log('no file selected');
-        }
-        if (!this.currentChat) {
-            console.log('no current chat');
-        }
-        if (!(fileInput && fileInput.files && fileInput.files[0]) || !this.currentChat) {
-            return;
-        }
+        if (!(fileInput && fileInput.files && fileInput.files[0]) || !this.currentChat) return;
         const file = fileInput.files[0];
         const maxSize = 5 * 1024 * 1024;
         if (file.size > maxSize) {
@@ -1039,14 +947,29 @@ class MessagingApp {
             this.currentChat = name;
             nameInput.value = '';
             this.updateAppUI();
-        } else if (type === 'room') {
-            const action = document.getElementById('roomActionSelect').value;
-            let result;
-            if (action === 'join') {
-                result = this.joinRoom(name, password);
-            } else {
-                result = this.createRoom(name, password);
+
+        } else if (type === 'room-create') {
+            if (!password) {
+                alert('A password is required to create a room');
+                return;
             }
+            const result = this.createRoom(name, password);
+            if (!result.success) {
+                alert(result.error);
+                return;
+            }
+            this.currentChatType = 'room';
+            this.currentChat = name;
+            nameInput.value = '';
+            pwInput.value = '';
+            this.updateAppUI();
+
+        } else if (type === 'room-join') {
+            if (!password) {
+                alert('A password is required to join a room');
+                return;
+            }
+            const result = this.joinRoom(name, password);
             if (!result.success) {
                 alert(result.error);
                 return;
@@ -1149,14 +1072,12 @@ document.addEventListener('DOMContentLoaded', () => {
     app = new MessagingApp();
 });
 
-// Toggle between login and signup forms
 function toggleAuthForm(e) {
     e.preventDefault();
     document.getElementById('loginForm').classList.toggle('active');
     document.getElementById('signupForm').classList.toggle('active');
 }
 
-// helpers called from HTML
 function closeQrExportModal() {
     if (app) app.closeQrExportModal();
 }
