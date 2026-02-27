@@ -385,8 +385,14 @@ class MessagingApp {
 
     sendFileMessage(fileObj) {
         if (!this.currentChat || !fileObj) return false;
-        this.saveMessage(this.currentUser.username, this.currentChat, Object.assign({ type: 'file' }, fileObj));
-        return true;
+        try {
+            this.saveMessage(this.currentUser.username, this.currentChat, Object.assign({ type: 'file' }, fileObj));
+            return true;
+        } catch (err) {
+            console.error('error saving file message', err);
+            alert('Failed to save file message (storage limit?)');
+            return false;
+        }
     }
 
     getDirectConversations() {
@@ -895,17 +901,34 @@ class MessagingApp {
         // if file selected send file instead
         if (fileInput && fileInput.files && fileInput.files[0]) {
             const file = fileInput.files[0];
+            // simple size limit (5MB) to avoid quota
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('File too large (max 5MB)');
+                fileInput.value = '';
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 const data = e.target.result;
-                const fileObj = { filename: file.name, data };
-                if (this.currentChatType === 'room') {
-                    this.saveRoomMessage(this.currentChat, this.currentUser.username, fileObj);
-                } else {
-                    this.sendFileMessage(fileObj);
+                const fileObj = { type: 'file', filename: file.name, data };
+                try {
+                    if (this.currentChatType === 'room') {
+                        this.saveRoomMessage(this.currentChat, this.currentUser.username, fileObj);
+                    } else {
+                        this.sendFileMessage(fileObj);
+                    }
+                } catch (err) {
+                    console.error('error saving file message', err);
+                    alert('Failed to save file (storage limit?)');
                 }
                 fileInput.value = '';
                 this.renderMessages();
+            };
+            reader.onerror = (err) => {
+                console.error('file reader error', err);
+                alert('Failed to read file');
             };
             reader.readAsDataURL(file);
             return;
