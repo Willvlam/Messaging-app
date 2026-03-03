@@ -33,10 +33,10 @@ class MessagingApp {
         if (username.length < 3) return { success: false, error: 'Username must be at least 3 characters' };
         if (password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
 
-        const snapshot = await this.db.ref(`users/${username}`).get();
+        const snapshot = await this.db.ref('users/' + username).get();
         if (snapshot.exists()) return { success: false, error: 'Username already exists' };
 
-        await this.db.ref(`users/${username}`).set({
+        await this.db.ref('users/' + username).set({
             username,
             password,
             createdAt: new Date().toISOString()
@@ -48,7 +48,7 @@ class MessagingApp {
     }
 
     async login(username, password) {
-        const snapshot = await this.db.ref(`users/${username}`).get();
+        const snapshot = await this.db.ref('users/' + username).get();
         if (!snapshot.exists()) return { success: false, error: 'User not found' };
         const user = snapshot.val();
         if (user.password !== password) return { success: false, error: 'Incorrect password' };
@@ -72,63 +72,63 @@ class MessagingApp {
 
     async getFriendsForCurrent() {
         if (!this.currentUser) return [];
-        const snap = await this.db.ref(`friends/${this.currentUser.username}`).get();
+        const snap = await this.db.ref('friends/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()) : [];
     }
 
     async sendFriendRequest(toUsername) {
         if (!this.currentUser) return { success: false, error: 'Not logged in' };
-        const userSnap = await this.db.ref(`users/${toUsername}`).get();
+        const userSnap = await this.db.ref('users/' + toUsername).get();
         if (!userSnap.exists()) return { success: false, error: 'User not found' };
         if (toUsername === this.currentUser.username) return { success: false, error: 'Cannot friend yourself' };
 
-        const friendSnap = await this.db.ref(`friends/${this.currentUser.username}/${toUsername}`).get();
+        const friendSnap = await this.db.ref('friends/' + this.currentUser.username + '/' + toUsername).get();
         if (friendSnap.exists()) return { success: false, error: 'Already friends' };
 
-        const reqSnap = await this.db.ref(`friendRequests/${toUsername}/${this.currentUser.username}`).get();
+        const reqSnap = await this.db.ref('friendRequests/' + toUsername + '/' + this.currentUser.username).get();
         if (reqSnap.exists()) return { success: false, error: 'Request already sent' };
 
-        await this.db.ref(`friendRequests/${toUsername}/${this.currentUser.username}`).set(true);
-        await this.db.ref(`outgoingRequests/${this.currentUser.username}/${toUsername}`).set(true);
+        await this.db.ref('friendRequests/' + toUsername + '/' + this.currentUser.username).set(true);
+        await this.db.ref('outgoingRequests/' + this.currentUser.username + '/' + toUsername).set(true);
         return { success: true };
     }
 
     async getFriendRequestsForCurrent() {
         if (!this.currentUser) return [];
-        const snap = await this.db.ref(`friendRequests/${this.currentUser.username}`).get();
+        const snap = await this.db.ref('friendRequests/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()) : [];
     }
 
     async getOutgoingFriendRequests() {
         if (!this.currentUser) return [];
-        const snap = await this.db.ref(`outgoingRequests/${this.currentUser.username}`).get();
+        const snap = await this.db.ref('outgoingRequests/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()) : [];
     }
 
     async acceptFriendRequest(fromUsername) {
         if (!this.currentUser) return { success: false, error: 'Not logged in' };
-        await this.db.ref(`friendRequests/${this.currentUser.username}/${fromUsername}`).remove();
-        await this.db.ref(`outgoingRequests/${fromUsername}/${this.currentUser.username}`).remove();
-        await this.db.ref(`friends/${this.currentUser.username}/${fromUsername}`).set(true);
-        await this.db.ref(`friends/${fromUsername}/${this.currentUser.username}`).set(true);
+        await this.db.ref('friendRequests/' + this.currentUser.username + '/' + fromUsername).remove();
+        await this.db.ref('outgoingRequests/' + fromUsername + '/' + this.currentUser.username).remove();
+        await this.db.ref('friends/' + this.currentUser.username + '/' + fromUsername).set(true);
+        await this.db.ref('friends/' + fromUsername + '/' + this.currentUser.username).set(true);
         return { success: true };
     }
 
     async declineFriendRequest(fromUsername) {
         if (!this.currentUser) return;
-        await this.db.ref(`friendRequests/${this.currentUser.username}/${fromUsername}`).remove();
-        await this.db.ref(`outgoingRequests/${fromUsername}/${this.currentUser.username}`).remove();
+        await this.db.ref('friendRequests/' + this.currentUser.username + '/' + fromUsername).remove();
+        await this.db.ref('outgoingRequests/' + fromUsername + '/' + this.currentUser.username).remove();
     }
 
     async cancelFriendRequest(toUsername) {
         if (!this.currentUser) return;
-        await this.db.ref(`friendRequests/${toUsername}/${this.currentUser.username}`).remove();
-        await this.db.ref(`outgoingRequests/${this.currentUser.username}/${toUsername}`).remove();
+        await this.db.ref('friendRequests/' + toUsername + '/' + this.currentUser.username).remove();
+        await this.db.ref('outgoingRequests/' + this.currentUser.username + '/' + toUsername).remove();
     }
 
     async removeFriend(username) {
         if (!this.currentUser) return;
-        await this.db.ref(`friends/${this.currentUser.username}/${username}`).remove();
+        await this.db.ref('friends/' + this.currentUser.username + '/' + username).remove();
     }
 
     // =====================
@@ -142,23 +142,23 @@ class MessagingApp {
     async saveMessage(from, to, content) {
         const key = this.getConversationKey(from, to);
         const msg = Object.assign({ from, to, timestamp: new Date().toISOString() }, content);
-        await this.db.ref(`messages/${key}`).push(msg);
-        await this.db.ref(`userConversations/${from}/${to}`).set(true);
-        await this.db.ref(`userConversations/${to}/${from}`).set(true);
+        await this.db.ref('messages/' + key).push(msg);
+        await this.db.ref('userConversations/' + from + '/' + to).set(true);
+        await this.db.ref('userConversations/' + to + '/' + from).set(true);
     }
 
     async getDirectConversations() {
-        const snap = await this.db.ref(`userConversations/${this.currentUser.username}`).get();
+        const snap = await this.db.ref('userConversations/' + this.currentUser.username).get();
         const fromConvos = snap.exists() ? Object.keys(snap.val()) : [];
         const friends = await this.getFriendsForCurrent();
         return Array.from(new Set([...fromConvos, ...friends])).sort();
     }
 
     async deleteConversation(username) {
-        if (!confirm(`Delete all messages with @${username}?`)) return;
+        if (!confirm('Delete all messages with @' + username + '?')) return;
         const key = this.getConversationKey(this.currentUser.username, username);
-        await this.db.ref(`messages/${key}`).remove();
-        await this.db.ref(`userConversations/${this.currentUser.username}/${username}`).remove();
+        await this.db.ref('messages/' + key).remove();
+        await this.db.ref('userConversations/' + this.currentUser.username + '/' + username).remove();
         if (this.currentChat === username) {
             this.currentChat = null;
             this.detachMessageListener();
@@ -171,36 +171,36 @@ class MessagingApp {
     // =====================
 
     async getUserRooms() {
-        const snap = await this.db.ref(`userRooms/${this.currentUser.username}`).get();
+        const snap = await this.db.ref('userRooms/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()).sort() : [];
     }
 
     async createRoom(roomName, password) {
-        const existing = await this.db.ref(`rooms/${roomName}`).get();
+        const existing = await this.db.ref('rooms/' + roomName).get();
         if (existing.exists()) return { success: false, error: 'Room already exists' };
         if (!password) return { success: false, error: 'Password required to create room' };
-        await this.db.ref(`rooms/${roomName}`).set({ password, createdAt: new Date().toISOString() });
-        await this.db.ref(`rooms/${roomName}/participants/${this.currentUser.username}`).set(true);
-        await this.db.ref(`userRooms/${this.currentUser.username}/${roomName}`).set(true);
+        await this.db.ref('rooms/' + roomName).set({ password, createdAt: new Date().toISOString() });
+        await this.db.ref('rooms/' + roomName + '/participants/' + this.currentUser.username).set(true);
+        await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).set(true);
         return { success: true };
     }
 
     async joinRoom(roomName, password) {
-        const snap = await this.db.ref(`rooms/${roomName}`).get();
+        const snap = await this.db.ref('rooms/' + roomName).get();
         if (!snap.exists()) return { success: false, error: 'Room not found' };
         const room = snap.val();
         if (room.password !== password) return { success: false, error: 'Incorrect room password' };
-        await this.db.ref(`rooms/${roomName}/participants/${this.currentUser.username}`).set(true);
-        await this.db.ref(`userRooms/${this.currentUser.username}/${roomName}`).set(true);
+        await this.db.ref('rooms/' + roomName + '/participants/' + this.currentUser.username).set(true);
+        await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).set(true);
         return { success: true };
     }
 
     async leaveRoom(roomName) {
-        await this.db.ref(`rooms/${roomName}/participants/${this.currentUser.username}`).remove();
-        await this.db.ref(`userRooms/${this.currentUser.username}/${roomName}`).remove();
-        const partSnap = await this.db.ref(`rooms/${roomName}/participants`).get();
+        await this.db.ref('rooms/' + roomName + '/participants/' + this.currentUser.username).remove();
+        await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).remove();
+        const partSnap = await this.db.ref('rooms/' + roomName + '/participants').get();
         if (!partSnap.exists()) {
-            await this.db.ref(`rooms/${roomName}`).remove();
+            await this.db.ref('rooms/' + roomName).remove();
         }
         if (this.currentChat === roomName && this.currentChatType === 'room') {
             this.currentChat = null;
@@ -212,15 +212,15 @@ class MessagingApp {
 
     async saveRoomMessage(roomName, from, content) {
         const msg = Object.assign({ from, timestamp: new Date().toISOString() }, content);
-        await this.db.ref(`rooms/${roomName}/messages`).push(msg);
+        await this.db.ref('rooms/' + roomName + '/messages').push(msg);
     }
 
     async inviteFriendToRoom(friend) {
         if (!this.currentChat || this.currentChatType !== 'room') return { success: false, error: 'Not in room' };
-        const snap = await this.db.ref(`rooms/${this.currentChat}/participants/${friend}`).get();
+        const snap = await this.db.ref('rooms/' + this.currentChat + '/participants/' + friend).get();
         if (snap.exists()) return { success: false, error: 'Already in room' };
-        await this.db.ref(`rooms/${this.currentChat}/participants/${friend}`).set(true);
-        await this.db.ref(`userRooms/${friend}/${this.currentChat}`).set(true);
+        await this.db.ref('rooms/' + this.currentChat + '/participants/' + friend).set(true);
+        await this.db.ref('userRooms/' + friend + '/' + this.currentChat).set(true);
         return { success: true };
     }
 
@@ -234,15 +234,17 @@ class MessagingApp {
 
         let ref;
         if (this.currentChatType === 'room') {
-            ref = this.db.ref(`rooms/${this.currentChat}/messages`);
+            ref = this.db.ref('rooms/' + this.currentChat + '/messages');
         } else {
             const key = this.getConversationKey(this.currentUser.username, this.currentChat);
-            ref = this.db.ref(`messages/${key}`);
+            ref = this.db.ref('messages/' + key);
         }
 
         const listener = ref.on('value', (snapshot) => {
             const val = snapshot.val();
-            const msgs = val ? Object.values(val).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
+            const msgs = val
+                ? Object.values(val).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+                : [];
             this.renderMessagesFromData(msgs);
         });
 
@@ -290,7 +292,7 @@ class MessagingApp {
 
     updateCurrentUserDisplay() {
         const display = document.getElementById('currentUserDisplay');
-        if (display) display.textContent = `@${this.currentUser.username}`;
+        if (display) display.textContent = '@' + this.currentUser.username;
     }
 
     // =====================
@@ -328,11 +330,17 @@ class MessagingApp {
                 const accept = document.createElement('button');
                 accept.className = 'request-button';
                 accept.textContent = 'Accept';
-                accept.onclick = async () => { await this.acceptFriendRequest(from); await this.updateFriendsList(); };
+                accept.onclick = async () => {
+                    await this.acceptFriendRequest(from);
+                    await this.updateFriendsList();
+                };
                 const decline = document.createElement('button');
                 decline.className = 'request-button decline';
                 decline.textContent = 'Decline';
-                decline.onclick = async () => { await this.declineFriendRequest(from); await this.updateFriendsList(); };
+                decline.onclick = async () => {
+                    await this.declineFriendRequest(from);
+                    await this.updateFriendsList();
+                };
                 item.appendChild(accept);
                 item.appendChild(decline);
                 reqList.appendChild(item);
@@ -351,7 +359,10 @@ class MessagingApp {
                 const cancel = document.createElement('button');
                 cancel.className = 'request-button decline';
                 cancel.textContent = 'Cancel';
-                cancel.onclick = async () => { await this.cancelFriendRequest(to); await this.updateFriendsList(); };
+                cancel.onclick = async () => {
+                    await this.cancelFriendRequest(to);
+                    await this.updateFriendsList();
+                };
                 item.appendChild(cancel);
                 reqList.appendChild(item);
             });
@@ -364,7 +375,10 @@ class MessagingApp {
             const rm = document.createElement('button');
             rm.className = 'friend-remove';
             rm.textContent = '×';
-            rm.onclick = async () => { await this.removeFriend(f); await this.updateFriendsList(); };
+            rm.onclick = async () => {
+                await this.removeFriend(f);
+                await this.updateFriendsList();
+            };
             item.appendChild(rm);
             list.appendChild(item);
 
@@ -381,14 +395,18 @@ class MessagingApp {
     async handleAddFriend(name) {
         const errorEl = document.getElementById('addFriendError');
         if (!name) return;
-        const result = await this.sendFriendRequest(name);
-        if (result.success) {
-            document.getElementById('addFriendInput').value = '';
-            if (errorEl) errorEl.textContent = 'Request sent';
-            await this.updateFriendsList();
-        } else {
-            if (errorEl) errorEl.textContent = result.error;
-            else alert(result.error);
+        try {
+            const result = await this.sendFriendRequest(name);
+            if (result.success) {
+                document.getElementById('addFriendInput').value = '';
+                if (errorEl) errorEl.textContent = 'Request sent';
+                await this.updateFriendsList();
+            } else {
+                if (errorEl) errorEl.textContent = result.error;
+                else alert(result.error);
+            }
+        } catch (err) {
+            if (errorEl) errorEl.textContent = 'Error: ' + err.message;
         }
     }
 
@@ -397,8 +415,12 @@ class MessagingApp {
         const friend = select.value;
         if (!friend) return;
         if (this.currentChatType !== 'room' || !this.currentChat) { alert('No room selected'); return; }
-        const res = await this.inviteFriendToRoom(friend);
-        if (!res.success) { alert(res.error); } else { alert(`@${friend} invited to room`); await this.updateAppUI(); }
+        try {
+            const res = await this.inviteFriendToRoom(friend);
+            if (!res.success) { alert(res.error); } else { alert('@' + friend + ' invited to room'); await this.updateAppUI(); }
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
     }
 
     async updateConversationsList() {
@@ -469,7 +491,7 @@ class MessagingApp {
         const inviteSection = document.getElementById('roomInviteSection');
         if (this.currentChatType === 'room' && inviteSection) {
             const friends = await this.getFriendsForCurrent();
-            const partSnap = await this.db.ref(`rooms/${this.currentChat}/participants`).get();
+            const partSnap = await this.db.ref('rooms/' + this.currentChat + '/participants').get();
             const participants = partSnap.exists() ? Object.keys(partSnap.val()) : [];
             const avail = friends.filter(f => !participants.includes(f));
             if (avail.length > 0) { inviteSection.classList.remove('hidden'); } else { inviteSection.classList.add('hidden'); }
@@ -496,7 +518,7 @@ class MessagingApp {
                 msg.from.toLowerCase() === this.currentUser.username.toLowerCase();
 
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sent ? 'sent' : 'received'}`;
+            messageDiv.className = 'message ' + (sent ? 'sent' : 'received');
 
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
@@ -576,11 +598,18 @@ class MessagingApp {
             const startBtn = document.getElementById('startChatBtn');
             const val = e.target.value;
             if (val === 'room-create') {
-                pwInput.classList.remove('hidden'); helper.classList.remove('hidden'); startBtn.textContent = 'Create Room';
+                pwInput.classList.remove('hidden');
+                helper.classList.remove('hidden');
+                startBtn.textContent = 'Create Room';
             } else if (val === 'room-join') {
-                pwInput.classList.remove('hidden'); helper.classList.remove('hidden'); startBtn.textContent = 'Join Room';
+                pwInput.classList.remove('hidden');
+                helper.classList.remove('hidden');
+                startBtn.textContent = 'Join Room';
             } else {
-                pwInput.classList.add('hidden'); pwInput.value = ''; helper.classList.add('hidden'); startBtn.textContent = 'Open Chat';
+                pwInput.classList.add('hidden');
+                pwInput.value = '';
+                helper.classList.add('hidden');
+                startBtn.textContent = 'Open Chat';
             }
         });
 
@@ -612,35 +641,45 @@ class MessagingApp {
     }
 
     async handleLogin() {
-        const username = document.getElementById('loginUsername').value;
+        const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
         const errorDiv = document.getElementById('loginError');
-        const result = await this.login(username, password);
-        if (result.success) {
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            errorDiv.textContent = '';
-            this.render();
-        } else {
-            errorDiv.textContent = result.error;
+        errorDiv.textContent = 'Logging in...';
+        try {
+            const result = await this.login(username, password);
+            if (result.success) {
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+                errorDiv.textContent = '';
+                this.render();
+            } else {
+                errorDiv.textContent = result.error;
+            }
+        } catch (err) {
+            errorDiv.textContent = 'Error: ' + err.message;
         }
     }
 
     async handleSignup() {
-        const username = document.getElementById('signupUsername').value;
+        const username = document.getElementById('signupUsername').value.trim();
         const password = document.getElementById('signupPassword').value;
         const password2 = document.getElementById('signupPassword2').value;
         const errorDiv = document.getElementById('signupError');
-        if (password !== password2) { errorDiv.textContent = 'Passwords do not match'; return; }
-        const result = await this.signup(username, password);
-        if (result.success) {
-            document.getElementById('signupUsername').value = '';
-            document.getElementById('signupPassword').value = '';
-            document.getElementById('signupPassword2').value = '';
-            errorDiv.textContent = '';
-            this.render();
-        } else {
-            errorDiv.textContent = result.error;
+        errorDiv.textContent = 'Signing up...';
+        try {
+            if (password !== password2) { errorDiv.textContent = 'Passwords do not match'; return; }
+            const result = await this.signup(username, password);
+            if (result.success) {
+                document.getElementById('signupUsername').value = '';
+                document.getElementById('signupPassword').value = '';
+                document.getElementById('signupPassword2').value = '';
+                errorDiv.textContent = '';
+                this.render();
+            } else {
+                errorDiv.textContent = result.error;
+            }
+        } catch (err) {
+            errorDiv.textContent = 'Error: ' + err.message;
         }
     }
 
@@ -648,12 +687,16 @@ class MessagingApp {
         const input = document.getElementById('messageInput');
         const text = input.value;
         if (!text.trim() || !this.currentChat) return;
-        if (this.currentChatType === 'room') {
-            await this.saveRoomMessage(this.currentChat, this.currentUser.username, { type: 'text', text });
-        } else {
-            await this.saveMessage(this.currentUser.username, this.currentChat, { type: 'text', text });
+        try {
+            if (this.currentChatType === 'room') {
+                await this.saveRoomMessage(this.currentChat, this.currentUser.username, { type: 'text', text });
+            } else {
+                await this.saveMessage(this.currentUser.username, this.currentChat, { type: 'text', text });
+            }
+            input.value = '';
+        } catch (err) {
+            alert('Failed to send message: ' + err.message);
         }
-        input.value = '';
     }
 
     async handleSendFile() {
@@ -671,7 +714,7 @@ class MessagingApp {
                     await this.saveMessage(this.currentUser.username, this.currentChat, fileObj);
                 }
             } catch (err) {
-                alert('Failed to save file (too large for Firebase free tier?)');
+                alert('Failed to save file: ' + err.message);
             }
             fileInput.value = '';
         };
@@ -688,35 +731,39 @@ class MessagingApp {
 
         if (!name) { alert('Please enter a name'); return; }
 
-        if (type === 'user') {
-            if (name === this.currentUser.username) { alert('Cannot chat with yourself'); return; }
-            this.currentChatType = 'user';
-            this.currentChat = name;
-            nameInput.value = '';
-            this.attachMessageListener();
-            await this.updateAppUI();
+        try {
+            if (type === 'user') {
+                if (name === this.currentUser.username) { alert('Cannot chat with yourself'); return; }
+                this.currentChatType = 'user';
+                this.currentChat = name;
+                nameInput.value = '';
+                this.attachMessageListener();
+                await this.updateAppUI();
 
-        } else if (type === 'room-create') {
-            if (!password) { alert('A password is required to create a room'); return; }
-            const result = await this.createRoom(name, password);
-            if (!result.success) { alert(result.error); return; }
-            this.currentChatType = 'room';
-            this.currentChat = name;
-            nameInput.value = '';
-            pwInput.value = '';
-            this.attachMessageListener();
-            await this.updateAppUI();
+            } else if (type === 'room-create') {
+                if (!password) { alert('A password is required to create a room'); return; }
+                const result = await this.createRoom(name, password);
+                if (!result.success) { alert(result.error); return; }
+                this.currentChatType = 'room';
+                this.currentChat = name;
+                nameInput.value = '';
+                pwInput.value = '';
+                this.attachMessageListener();
+                await this.updateAppUI();
 
-        } else if (type === 'room-join') {
-            if (!password) { alert('A password is required to join a room'); return; }
-            const result = await this.joinRoom(name, password);
-            if (!result.success) { alert(result.error); return; }
-            this.currentChatType = 'room';
-            this.currentChat = name;
-            nameInput.value = '';
-            pwInput.value = '';
-            this.attachMessageListener();
-            await this.updateAppUI();
+            } else if (type === 'room-join') {
+                if (!password) { alert('A password is required to join a room'); return; }
+                const result = await this.joinRoom(name, password);
+                if (!result.success) { alert(result.error); return; }
+                this.currentChatType = 'room';
+                this.currentChat = name;
+                nameInput.value = '';
+                pwInput.value = '';
+                this.attachMessageListener();
+                await this.updateAppUI();
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
         }
     }
 
@@ -782,7 +829,7 @@ class MessagingApp {
             const data = JSON.parse(json);
             if (data.username) {
                 document.getElementById('chatNameInput').value = data.username;
-                alert(`Scanned @${data.username} — you can now open a chat with them!`);
+                alert('Scanned @' + data.username + ' — you can now open a chat with them!');
             }
         } catch (e) {
             alert('Failed to parse QR data');
