@@ -16,3 +16,14 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
+
+// TEMPORARY TEST - delete this after fixing
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const db = firebase.database();
+        document.getElementById('loginError').textContent = 'Firebase connected OK!';
+    } catch(err) {
+        document.getElementById('loginError').textContent = 'Firebase error: ' + err.message;
+    }
+});
