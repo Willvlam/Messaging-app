@@ -160,6 +160,7 @@
   messagingSenderId: "950693813090",
   appId: "1:950693813090:web:74f8bc994ad3460fadea3b"
 };
+firebase.initializeApp(firebaseConfig);
     </script>
     <!-- AND HERE                                     -->
     <!-- ============================================ -->
@@ -172,13 +173,15 @@
     <script src="app.js"></script>
 
     <!-- Catch and display any errors on screen -->
-    <script>
+    
+<script>
         window.onerror = function(msg, src, line, col, err) {
-            const box = document.getElementById('errorBox');
-            box.style.display = 'block';
-            box.textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
-            return false;
-        };
+        const box = document.getElementById('errorBox');
+        box.style.display = 'block';
+        box.textContent = 'Error: ' + msg + ' | File: ' + src + ' | Line: ' + line;
+        return false;
+    };
+</script>
     </script>
 
 </body>
