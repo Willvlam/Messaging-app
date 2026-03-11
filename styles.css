@@ -4,25 +4,12 @@ html, body {
     height: 100%;
 }
 
-#app {
-    width: 100%;
-    height: 100vh;
-    overflow-x: hidden;
-}
-* {
-    
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* ADD THIS BELOW THE * BLOCK */
 input, select, textarea {
     font-size: 16px !important;
 }
@@ -39,9 +26,9 @@ body {
 #app {
     width: 100%;
     height: 100vh;
+    overflow-x: hidden;
 }
 
-/* Auth Container */
 .container {
     width: 100%;
     height: 100%;
@@ -54,7 +41,6 @@ body {
     display: none;
 }
 
-/* generic utility */
 .hidden {
     display: none !important;
 }
@@ -100,7 +86,7 @@ body {
     margin-bottom: 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    font-size: 14px;
+    font-size: 16px;
     transition: border-color 0.3s;
 }
 
@@ -171,6 +157,7 @@ body {
     display: flex;
     gap: 5px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .auth-toggle {
@@ -202,6 +189,7 @@ body {
     display: flex;
     height: 100vh;
     background: white;
+    overflow-x: hidden;
 }
 
 .sidebar {
@@ -211,6 +199,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .user-header {
@@ -219,16 +208,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.user-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.user-actions .btn {
-    padding: 6px 10px;
-    font-size: 12px;
+    flex-wrap: wrap;
+    gap: 5px;
 }
 
 .user-header h2 {
@@ -251,10 +232,6 @@ body {
     color: #666;
 }
 
-.new-message-section .input-field {
-    margin-bottom: 10px;
-}
-
 .new-message-section .btn {
     margin-bottom: 0;
 }
@@ -273,7 +250,6 @@ body {
     padding: 0 15px 15px 15px;
 }
 
-/* friends section */
 .friends-section {
     padding: 15px;
     border-bottom: 1px solid #e9ecef;
@@ -413,6 +389,7 @@ body {
     display: flex;
     flex-direction: column;
     background: white;
+    overflow-x: hidden;
 }
 
 .no-chat-selected {
@@ -466,14 +443,8 @@ body {
 }
 
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .message.sent {
@@ -486,17 +457,11 @@ body {
 
 .message-sender {
     font-size: 11px;
-    color: #333; /* darker for contrast */
-    /* now placed below timestamp, so add a little top margin */
+    color: #333;
     margin-top: 2px;
-}
-
-/* make sure label always appears on its own line */
-.message-sender {
     display: block;
 }
 
-/* distinguish own label with a slightly stronger weight */
 .message.sent .message-sender {
     font-weight: 600;
 }
@@ -546,6 +511,7 @@ body {
     display: flex;
     gap: 10px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .file-input {
@@ -566,6 +532,7 @@ body {
 .message-input-area .input-field {
     flex: 1;
     margin-bottom: 0;
+    min-width: 0;
 }
 
 .message-input-area .btn {
@@ -666,84 +633,24 @@ body {
     overflow: hidden;
 }
 
-.qr-reader-container #html5-qrcode {
-    width: 100%;
-}
-
 .qr-status {
     padding: 10px;
     margin: 10px 0;
     border-radius: 5px;
     text-align: center;
     font-size: 14px;
-    display: none;
 }
 
 .qr-status.success {
     background: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
-    display: block;
 }
 
 .qr-status.error {
     background: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
-    display: block;
-}
-
-
-/* QR modal styling */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 8px;
-    max-width: 90%;
-    width: 400px;
-    padding: 20px;
-    position: relative;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-}
-
-.qr-code-container,
-.qr-reader-container {
-    width: 100%;
-    height: auto;
-    display: flex;
-    justify-content: center;
-    margin: 15px 0;
-}
-
-.qr-status {
-    text-align: center;
-    font-size: 14px;
-    color: #333;
-    margin-top: 10px;
 }
 
 /* Responsive */
