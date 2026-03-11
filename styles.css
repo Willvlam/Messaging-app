@@ -736,30 +736,60 @@ body {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .main-layout {
         flex-direction: column;
     }
 
     .sidebar {
         width: 100%;
+        max-height: 280px;
         border-right: none;
         border-bottom: 1px solid #e9ecef;
-        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .new-message-section {
+        padding: 10px;
+    }
+
+    .friends-section {
+        padding: 10px;
     }
 
     .conversations-list {
-        max-height: 100px;
+        max-height: 80px;
     }
 
     .chat-area {
-        min-height: calc(100vh - 200px);
+        flex: 1;
+        min-height: calc(100vh - 280px);
     }
 
     .message-bubble {
         max-width: 85%;
     }
 
+    .user-header {
+        padding: 10px;
+    }
+
+    .user-actions .btn {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .message-input-area {
+        flex-wrap: wrap;
+        padding: 10px;
+    }
+
+    .file-input {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
     .auth-box {
         max-width: 100%;
         margin: 20px;
