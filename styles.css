@@ -1,7 +1,19 @@
 * {
+    
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ADD THIS BELOW THE * BLOCK */
+input, select, textarea {
+    font-size: 16px !important;
 }
 
 body {
