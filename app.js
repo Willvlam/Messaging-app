@@ -463,7 +463,18 @@ class MessagingApp {
                 if (msg.data && msg.data.startsWith('data:image')) {
                     const img = document.createElement('img');
                     img.src = msg.data;
-                    img.style.cssText = 'max-width:200px;max-height:200px;';
+                    img.style.cssText = 'max-width:100%;width:250px;border-radius:8px;cursor:pointer;display:block;';
+                    img.title = 'Tap to view full size';
+                    img.onclick = () => {
+                        const overlay = document.createElement('div');
+                        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer;';
+                        const fullImg = document.createElement('img');
+                        fullImg.src = msg.data;
+                        fullImg.style.cssText = 'max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;';
+                        overlay.appendChild(fullImg);
+                        overlay.onclick = () => document.body.removeChild(overlay);
+                        document.body.appendChild(overlay);
+                    };
                     bubble.appendChild(img);
                     const name = document.createElement('div');
                     name.textContent = msg.filename;
