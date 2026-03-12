@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
     <title>SecureMessage - Private Messaging App</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- ERROR BOX - shows any problems on screen -->
     <div id="errorBox" style="display:none;position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:15px;font-size:14px;z-index:9999;word-wrap:break-word;"></div>
 
     <div id="app">
@@ -81,6 +81,11 @@
 
                     <h3>Conversations</h3>
                     <div id="conversationsList" class="conversations-list"></div>
+
+                    <!-- Help Button -->
+                    <div class="help-section">
+                        <button id="helpBtn" class="btn btn-help">Help & Feedback</button>
+                    </div>
                 </div>
 
                 <!-- Chat Area -->
@@ -107,6 +112,29 @@
                             <button id="sendFileBtn" class="btn btn-secondary">Send File</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help / Feedback Modal -->
+        <div id="helpModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Help & Feedback</h2>
+                    <button class="modal-close" onclick="closeHelpModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Have a suggestion or issue? Let us know below!</p>
+                    <select id="feedbackType" class="input-field">
+                        <option value="suggestion">Suggestion</option>
+                        <option value="complaint">Complaint</option>
+                        <option value="bug">Bug Report</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <input type="text" id="feedbackSubject" placeholder="Subject" class="input-field">
+                    <textarea id="feedbackMessage" placeholder="Describe your feedback here..." class="input-field" rows="5" style="resize:vertical;"></textarea>
+                    <button id="submitFeedbackBtn" class="btn btn-primary">Submit Feedback</button>
+                    <div id="feedbackStatus" class="error-message" style="color:#667eea;"></div>
                 </div>
             </div>
         </div>
@@ -147,10 +175,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    <!-- ============================================ -->
-    <!-- PASTE YOUR FIREBASE CONFIG BETWEEN HERE      -->
+
     <script>
-    const firebaseConfig = {
+   const firebaseConfig = {
   apiKey: "AIzaSyD57X2gOycQQBlPVJP9A-dAM1aUhtD3O_M",
   authDomain: "messages-86258.firebaseapp.com",
   databaseURL: "https://messages-86258-default-rtdb.firebaseio.com",
@@ -159,11 +186,16 @@
   messagingSenderId: "950693813090",
   appId: "1:950693813090:web:74f8bc994ad3460fadea3b"
 };
-firebase.initializeApp(firebaseConfig);
     </script>
-    <!-- AND HERE                                     -->
-    <!-- ============================================ -->
-
+   const firebaseConfig = {
+  apiKey: "AIzaSyD57X2gOycQQBlPVJP9A-dAM1aUhtD3O_M",
+  authDomain: "messages-86258.firebaseapp.com",
+  databaseURL: "https://messages-86258-default-rtdb.firebaseio.com",
+  projectId: "messages-86258",
+  storageBucket: "messages-86258.firebasestorage.app",
+  messagingSenderId: "950693813090",
+  appId: "1:950693813090:web:74f8bc994ad3460fadea3b"
+};
     <!-- QR libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
@@ -171,16 +203,14 @@ firebase.initializeApp(firebaseConfig);
     <!-- App -->
     <script src="app.js"></script>
 
-    <!-- Catch and display any errors on screen -->
-    
-<script>
+    <script>
         window.onerror = function(msg, src, line, col, err) {
-        const box = document.getElementById('errorBox');
-        box.style.display = 'block';
-        box.textContent = 'Error: ' + msg + ' | File: ' + src + ' | Line: ' + line;
-        return false;
-    };
-</script>
+            const box = document.getElementById('errorBox');
+            box.style.display = 'block';
+            box.textContent = 'Error: ' + msg + ' | File: ' + src + ' | Line: ' + line;
+            return false;
+        };
+    </script>
 
 </body>
 </html>
