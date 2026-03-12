@@ -501,7 +501,7 @@ class MessagingApp {
             messageDiv.appendChild(senderDiv);
             container.appendChild(messageDiv);
         });
-        container.scrollTop = container.scrollHeight;
+        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
     }
 
     formatTime(date) {
