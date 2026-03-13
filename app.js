@@ -1,3 +1,6 @@
+// =====================
+// Emoji Data
+// =====================
 const EMOJI_CATEGORIES = {
     smileys: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'],
     gestures: ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','👀','👁','👅','👄'],
@@ -23,6 +26,7 @@ class MessagingApp {
         this.initializeEventListeners();
         this.render();
         showEmojiCategory('smileys');
+        this.cleanupOldMessages();
     }
  
     loadCurrentUser() {
@@ -235,6 +239,44 @@ class MessagingApp {
             this._msgListener = null;
         }
     }
+ 
+    // =====================
+    // Message Cleanup (24hr)
+    // =====================
+ 
+    async cleanupOldMessages() {
+        const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+ 
+        // Clean direct messages
+        try {
+            const msgsSnap = await this.db.ref('messages').get();
+            if (msgsSnap.exists()) {
+                msgsSnap.forEach(convo => {
+                    convo.forEach(msg => {
+                        const ts = new Date(msg.val().timestamp).getTime();
+                        if (ts < cutoff) msg.ref.remove();
+                    });
+                });
+            }
+        } catch (e) { console.log('Cleanup error (messages):', e); }
+ 
+        // Clean room messages
+        try {
+            const roomsSnap = await this.db.ref('rooms').get();
+            if (roomsSnap.exists()) {
+                roomsSnap.forEach(room => {
+                    room.child('messages').forEach(msg => {
+                        const ts = new Date(msg.val().timestamp).getTime();
+                        if (ts < cutoff) msg.ref.remove();
+                    });
+                });
+            }
+        } catch (e) { console.log('Cleanup error (rooms):', e); }
+    }
+ 
+    // =====================
+    // Render
+    // =====================
  
     render() {
         this.updateAuthUI();
@@ -957,3 +999,4 @@ function showEmojiCategory(category) {
     const tabEls = document.querySelectorAll('.emoji-tab');
     if (tabEls[idx]) tabEls[idx].classList.add('active');
 }
+
