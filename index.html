@@ -5,21 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
     <title>SecureMessage - Private Messaging App</title>
     <link rel="stylesheet" href="styles.css">
-
     <script>if(!window.location.hash) window.location.replace(window.location.href + '#');</script>
-
 </head>
 <body>
-
+ 
     <div id="errorBox" style="display:none;position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:15px;font-size:14px;z-index:9999;word-wrap:break-word;"></div>
-
+ 
     <div id="app">
         <!-- Auth Flow -->
         <div id="authContainer" class="container">
             <div class="auth-box">
                 <h1>SecureMessage</h1>
                 <p class="subtitle">Private messaging without tracking</p>
-
+ 
                 <div id="loginForm" class="auth-form active">
                     <h2>Login</h2>
                     <input type="text" id="loginUsername" placeholder="Username" class="input-field">
@@ -28,7 +26,7 @@
                     <p class="auth-toggle">Don't have an account? <a href="#" onclick="toggleAuthForm(event)">Sign Up</a></p>
                     <div id="loginError" class="error-message"></div>
                 </div>
-
+ 
                 <div id="signupForm" class="auth-form">
                     <h2>Create Account</h2>
                     <input type="text" id="signupUsername" placeholder="Username" class="input-field">
@@ -40,7 +38,7 @@
                 </div>
             </div>
         </div>
-
+ 
         <!-- Main App -->
         <div id="appContainer" class="container hidden">
             <div class="main-layout">
@@ -54,49 +52,59 @@
                             <button id="logoutBtn" class="btn btn-logout">Logout</button>
                         </div>
                     </div>
-
+ 
+                    <!-- Collapsible Friends -->
                     <div class="friends-section">
-                        <h3>Friends</h3>
-                        <div class="friend-add">
-                            <input type="text" id="addFriendInput" placeholder="Username to add" class="input-field">
-                            <button id="addFriendBtn" class="btn btn-secondary">Add Friend</button>
-                        </div>
-                        <div id="addFriendError" class="error-message"></div>
-                        <div id="friendRequestsList" class="friends-requests-list"></div>
-                        <div id="friendsList" class="friends-list"></div>
-                    </div>
-
-                    <div class="new-message-section">
-                        <h3>New Chat</h3>
-                        <select id="chatTypeSelect" class="input-field">
-                            <option value="user">User</option>
-                            <option value="room-create">Room (create)</option>
-                            <option value="room-join">Room (join)</option>
-                        </select>
-                        <input list="friendList" type="text" id="chatNameInput" placeholder="Enter username or room name" class="input-field">
-                        <datalist id="friendList"></datalist>
-                        <input type="password" id="chatPasswordInput" placeholder="Room password (required)" class="input-field hidden">
-                        <button id="startChatBtn" class="btn btn-primary">Open Chat</button>
-                        <div id="chatHelper" style="font-size:12px;color:#666;margin-top:6px;">
-                            <span id="roomHelperText" class="hidden">Enter room name and password; use the appropriate option to create or join.</span>
+                        <h3 class="collapsible-header" onclick="toggleFriends()">
+                            Friends <span id="friendsToggleIcon">▼</span>
+                        </h3>
+                        <div id="friendsCollapsible" class="hidden">
+                            <div class="friend-add">
+                                <input type="text" id="addFriendInput" placeholder="Username to add" class="input-field">
+                                <button id="addFriendBtn" class="btn btn-secondary">Add</button>
+                            </div>
+                            <div id="addFriendError" class="error-message" style="padding:0 10px;"></div>
+                            <div id="friendRequestsList" class="friends-requests-list"></div>
+                            <div id="friendsList" class="friends-list"></div>
                         </div>
                     </div>
-
-                    <h3>Conversations</h3>
+ 
+                    <!-- Collapsible New Chat -->
+                    <div class="new-chat-section">
+                        <h3 class="collapsible-header" onclick="toggleNewChat()">
+                            New Chat <span id="newChatToggleIcon">▼</span>
+                        </h3>
+                        <div id="newChatCollapsible" class="hidden">
+                            <div class="new-chat-inner">
+                                <select id="chatTypeSelect" class="input-field">
+                                    <option value="user">User</option>
+                                    <option value="room-create">Room (create)</option>
+                                    <option value="room-join">Room (join)</option>
+                                </select>
+                                <input list="friendList" type="text" id="chatNameInput" placeholder="Enter username or room name" class="input-field">
+                                <datalist id="friendList"></datalist>
+                                <input type="password" id="chatPasswordInput" placeholder="Room password (required)" class="input-field hidden">
+                                <button id="startChatBtn" class="btn btn-primary">Open Chat</button>
+                                <span id="roomHelperText" class="helper-text hidden">Enter room name and password; use the appropriate option to create or join.</span>
+                            </div>
+                        </div>
+                    </div>
+ 
+                    <h3 class="section-label">Conversations</h3>
                     <div id="conversationsList" class="conversations-list"></div>
-
+ 
                     <!-- Help Button -->
                     <div class="help-section">
                         <button id="helpBtn" class="btn btn-help">Help & Feedback</button>
                     </div>
                 </div>
-
+ 
                 <!-- Chat Area -->
                 <div class="chat-area">
                     <div id="noChatSelected" class="no-chat-selected">
                         <h2>Select a conversation or start a new one</h2>
                     </div>
-
+ 
                     <div id="chatView" class="chat-view hidden">
                         <div class="chat-header">
                             <h2 id="chatWith"></h2>
@@ -105,20 +113,45 @@
                                 <button id="inviteFriendBtn" class="btn btn-secondary">Invite</button>
                             </div>
                         </div>
-
+ 
+                        <!-- Reply preview bar -->
+                        <div id="replyBar" class="reply-bar hidden">
+                            <div class="reply-bar-content">
+                                <span class="reply-label">Replying to <strong id="replyToName"></strong></span>
+                                <span id="replyPreviewText" class="reply-preview"></span>
+                            </div>
+                            <button class="reply-cancel" onclick="cancelReply()">✕</button>
+                        </div>
+ 
                         <div id="messagesContainer" class="messages-container"></div>
-
+ 
                         <div class="message-input-area">
+                            <button id="emojiBtn" class="btn btn-emoji">😊</button>
                             <input type="text" id="messageInput" placeholder="Type a message..." class="input-field">
                             <input type="file" id="fileInput" accept="*/*" class="input-field file-input">
                             <button id="sendBtn" class="btn btn-primary">Send</button>
-                            <button id="sendFileBtn" class="btn btn-secondary">Send File</button>
+                            <button id="sendFileBtn" class="btn btn-secondary">File</button>
+                        </div>
+ 
+                        <!-- Emoji Picker -->
+                        <div id="emojiPicker" class="emoji-picker hidden">
+                            <div class="emoji-tabs">
+                                <button class="emoji-tab active" onclick="showEmojiCategory('smileys')">😀</button>
+                                <button class="emoji-tab" onclick="showEmojiCategory('gestures')">👋</button>
+                                <button class="emoji-tab" onclick="showEmojiCategory('hearts')">❤️</button>
+                                <button class="emoji-tab" onclick="showEmojiCategory('animals')">🐶</button>
+                                <button class="emoji-tab" onclick="showEmojiCategory('food')">🍕</button>
+                                <button class="emoji-tab" onclick="showEmojiCategory('activities')">⚽</button>
+                                <button class="emoji-tab" onclick="showEmojiCategory('travel')">✈️</button>
+                                <button class="emoji-tab" onclick="showEmojiCategory('symbols')">💯</button>
+                            </div>
+                            <div id="emojiGrid" class="emoji-grid"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
+ 
         <!-- Help / Feedback Modal -->
         <div id="helpModal" class="modal hidden">
             <div class="modal-content">
@@ -141,7 +174,7 @@
                 </div>
             </div>
         </div>
-
+ 
         <!-- QR Export Modal -->
         <div id="qrExportModal" class="modal hidden">
             <div class="modal-content">
@@ -156,7 +189,7 @@
                 </div>
             </div>
         </div>
-
+ 
         <!-- QR Import Modal -->
         <div id="qrImportModal" class="modal hidden">
             <div class="modal-content">
@@ -173,31 +206,26 @@
             </div>
         </div>
     </div>
-
+ 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-
-  <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyD57X2gOycQQBlPVJP9A-dAM1aUhtD3O_M",
-  authDomain: "messages-86258.firebaseapp.com",
-  databaseURL: "https://messages-86258-default-rtdb.firebaseio.com",
-  projectId: "messages-86258",
-  storageBucket: "messages-86258.firebasestorage.app",
-  messagingSenderId: "950693813090",
-  appId: "1:950693813090:web:74f8bc994ad3460fadea3b"
-};
-firebase.initializeApp(firebaseConfig);
-</script>
+ 
+    <!-- ============================================ -->
+    <!-- PASTE YOUR FIREBASE CONFIG BETWEEN HERE      -->
+    <script>
+        // PASTE YOUR FIREBASE CONFIG HERE
+    </script>
+    <!-- AND HERE                                     -->
+    <!-- ============================================ -->
+ 
     <!-- QR libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
-
+ 
     <!-- App -->
     <script src="app.js"></script>
-
+ 
     <script>
         window.onerror = function(msg, src, line, col, err) {
             const box = document.getElementById('errorBox');
@@ -206,6 +234,6 @@ firebase.initializeApp(firebaseConfig);
             return false;
         };
     </script>
-
+ 
 </body>
 </html>

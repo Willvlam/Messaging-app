@@ -1,3 +1,14 @@
+const EMOJI_CATEGORIES = {
+    smileys: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'],
+    gestures: ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','👀','👁','👅','👄'],
+    hearts: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'],
+    animals: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🦔'],
+    food: ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🌽','🥕','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕','🌮','🌯','🥙','🧆','🍿','🧂','🥫','🍱','🍘','🍙','🍚','🍛','🍜','🍝','🍢','🍣','🍤','🍥','🥮','🍡','🥟','🥠','🥡','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🍼','🥛','☕','🍵','🧃','🥤','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾'],
+    activities: ['⚽','🏀','🏈','⚾','🥎','🏐','🏉','🎾','🥏','🎳','🏏','🏑','🏒','🥍','🏓','🏸','🥊','🥋','🎽','🛹','🛷','⛸','🥅','⛳','🏹','🎣','🤿','🎿','🥌','🎯','🎱','🎮','🎰','🎲','🧩','🧸','♟','🎭','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🎻','📻','💻','🖥','📱','🎥','📷','📸'],
+    travel: ['🚗','🚕','🚙','🚌','🚎','🏎','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🛴','🛵','🏍','🚲','🚨','🚥','🚦','🛑','🚧','⛽','⚓','⛵','🛶','🚤','🛥','🛳','⛴','🚢','✈️','🛩','🛫','🛬','💺','🛸','🚁','🚀','🏠','🏡','🏢','🏥','🏦','🏨','🏪','🏫','🏬','🏯','🏰','💒','🗼','🗽','⛪','🕌','⛲','⛺','🌁','🌃','🏙','🌄','🌅','🌆','🌇','🌉','🌌'],
+    symbols: ['💯','🔔','🔕','🎵','🎶','💤','🔇','🔈','🔉','🔊','📢','📣','💬','💭','🗯','♻️','⚜️','🔱','📛','🔰','⭕','✅','☑️','✔️','❌','❎','➕','➖','➗','✖️','💲','💱','‼️','⁉️','❓','❔','❕','❗','〰️','⚪','⚫','🔴','🟠','🟡','🟢','🔵','🟣','🟤','🔺','🔻','🔷','🔶','🔹','🔸','🔲','🔳','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','🟫','⬛','⬜','🏁','🚩','🎌','🏴','🏳️']
+};
+ 
 class MessagingApp {
     constructor() {
         this.currentUser = null;
@@ -6,44 +17,36 @@ class MessagingApp {
         this.db = firebase.database();
         this._msgRef = null;
         this._msgListener = null;
+        this.replyingTo = null;
+        this.emojiPickerOpen = false;
         this.loadCurrentUser();
         this.initializeEventListeners();
         this.render();
+        showEmojiCategory('smileys');
     }
-
+ 
     loadCurrentUser() {
         const stored = sessionStorage.getItem('current_user');
-        if (stored) {
-            this.currentUser = JSON.parse(stored);
-        }
+        if (stored) this.currentUser = JSON.parse(stored);
     }
-
+ 
     saveCurrentUser() {
-        if (this.currentUser) {
-            sessionStorage.setItem('current_user', JSON.stringify(this.currentUser));
-        }
+        if (this.currentUser) sessionStorage.setItem('current_user', JSON.stringify(this.currentUser));
     }
-
+ 
     async signup(username, password) {
         if (!username || !password) return { success: false, error: 'Username and password required' };
         if (username.length < 3) return { success: false, error: 'Username must be at least 3 characters' };
         if (password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
         if (/[.#$\[\]]/.test(username)) return { success: false, error: 'Username cannot contain . # $ [ or ] characters' };
-
         const snapshot = await this.db.ref('users/' + username).get();
         if (snapshot.exists()) return { success: false, error: 'Username already exists' };
-
-        await this.db.ref('users/' + username).set({
-            username,
-            password,
-            createdAt: new Date().toISOString()
-        });
-
+        await this.db.ref('users/' + username).set({ username, password, createdAt: new Date().toISOString() });
         this.currentUser = { username };
         this.saveCurrentUser();
         return { success: true };
     }
-
+ 
     async login(username, password) {
         if (/[.#$\[\]]/.test(username)) return { success: false, error: 'Username cannot contain . # $ [ or ] characters' };
         const snapshot = await this.db.ref('users/' + username).get();
@@ -54,22 +57,23 @@ class MessagingApp {
         this.saveCurrentUser();
         return { success: true };
     }
-
+ 
     logout() {
         this.detachMessageListener();
         this.currentUser = null;
         this.currentChat = null;
         this.currentChatType = 'user';
+        this.replyingTo = null;
         sessionStorage.removeItem('current_user');
         this.render();
     }
-
+ 
     async getFriendsForCurrent() {
         if (!this.currentUser) return [];
         const snap = await this.db.ref('friends/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()) : [];
     }
-
+ 
     async sendFriendRequest(toUsername) {
         if (!this.currentUser) return { success: false, error: 'Not logged in' };
         const userSnap = await this.db.ref('users/' + toUsername).get();
@@ -83,19 +87,19 @@ class MessagingApp {
         await this.db.ref('outgoingRequests/' + this.currentUser.username + '/' + toUsername).set(true);
         return { success: true };
     }
-
+ 
     async getFriendRequestsForCurrent() {
         if (!this.currentUser) return [];
         const snap = await this.db.ref('friendRequests/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()) : [];
     }
-
+ 
     async getOutgoingFriendRequests() {
         if (!this.currentUser) return [];
         const snap = await this.db.ref('outgoingRequests/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()) : [];
     }
-
+ 
     async acceptFriendRequest(fromUsername) {
         if (!this.currentUser) return { success: false, error: 'Not logged in' };
         await this.db.ref('friendRequests/' + this.currentUser.username + '/' + fromUsername).remove();
@@ -104,28 +108,28 @@ class MessagingApp {
         await this.db.ref('friends/' + fromUsername + '/' + this.currentUser.username).set(true);
         return { success: true };
     }
-
+ 
     async declineFriendRequest(fromUsername) {
         if (!this.currentUser) return;
         await this.db.ref('friendRequests/' + this.currentUser.username + '/' + fromUsername).remove();
         await this.db.ref('outgoingRequests/' + fromUsername + '/' + this.currentUser.username).remove();
     }
-
+ 
     async cancelFriendRequest(toUsername) {
         if (!this.currentUser) return;
         await this.db.ref('friendRequests/' + toUsername + '/' + this.currentUser.username).remove();
         await this.db.ref('outgoingRequests/' + this.currentUser.username + '/' + toUsername).remove();
     }
-
+ 
     async removeFriend(username) {
         if (!this.currentUser) return;
         await this.db.ref('friends/' + this.currentUser.username + '/' + username).remove();
     }
-
+ 
     getConversationKey(user1, user2) {
         return [user1, user2].sort().join('_');
     }
-
+ 
     async saveMessage(from, to, content) {
         const key = this.getConversationKey(from, to);
         const msg = Object.assign({ from, to, timestamp: new Date().toISOString() }, content);
@@ -133,14 +137,14 @@ class MessagingApp {
         await this.db.ref('userConversations/' + from + '/' + to).set(true);
         await this.db.ref('userConversations/' + to + '/' + from).set(true);
     }
-
+ 
     async getDirectConversations() {
         const snap = await this.db.ref('userConversations/' + this.currentUser.username).get();
         const fromConvos = snap.exists() ? Object.keys(snap.val()) : [];
         const friends = await this.getFriendsForCurrent();
         return Array.from(new Set([...fromConvos, ...friends])).sort();
     }
-
+ 
     async deleteConversation(username) {
         if (!confirm('Delete all messages with @' + username + '?')) return;
         const key = this.getConversationKey(this.currentUser.username, username);
@@ -152,12 +156,12 @@ class MessagingApp {
         }
         await this.updateAppUI();
     }
-
+ 
     async getUserRooms() {
         const snap = await this.db.ref('userRooms/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()).sort() : [];
     }
-
+ 
     async createRoom(roomName, password) {
         const existing = await this.db.ref('rooms/' + roomName).get();
         if (existing.exists()) return { success: false, error: 'Room already exists' };
@@ -167,7 +171,7 @@ class MessagingApp {
         await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).set(true);
         return { success: true };
     }
-
+ 
     async joinRoom(roomName, password) {
         const snap = await this.db.ref('rooms/' + roomName).get();
         if (!snap.exists()) return { success: false, error: 'Room not found' };
@@ -177,14 +181,12 @@ class MessagingApp {
         await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).set(true);
         return { success: true };
     }
-
+ 
     async leaveRoom(roomName) {
         await this.db.ref('rooms/' + roomName + '/participants/' + this.currentUser.username).remove();
         await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).remove();
         const partSnap = await this.db.ref('rooms/' + roomName + '/participants').get();
-        if (!partSnap.exists()) {
-            await this.db.ref('rooms/' + roomName).remove();
-        }
+        if (!partSnap.exists()) await this.db.ref('rooms/' + roomName).remove();
         if (this.currentChat === roomName && this.currentChatType === 'room') {
             this.currentChat = null;
             this.currentChatType = 'user';
@@ -192,12 +194,12 @@ class MessagingApp {
         }
         await this.updateAppUI();
     }
-
+ 
     async saveRoomMessage(roomName, from, content) {
         const msg = Object.assign({ from, timestamp: new Date().toISOString() }, content);
         await this.db.ref('rooms/' + roomName + '/messages').push(msg);
     }
-
+ 
     async inviteFriendToRoom(friend) {
         if (!this.currentChat || this.currentChatType !== 'room') return { success: false, error: 'Not in room' };
         const snap = await this.db.ref('rooms/' + this.currentChat + '/participants/' + friend).get();
@@ -206,7 +208,7 @@ class MessagingApp {
         await this.db.ref('userRooms/' + friend + '/' + this.currentChat).set(true);
         return { success: true };
     }
-
+ 
     attachMessageListener() {
         this.detachMessageListener();
         if (!this.currentChat) return;
@@ -225,7 +227,7 @@ class MessagingApp {
         this._msgRef = ref;
         this._msgListener = listener;
     }
-
+ 
     detachMessageListener() {
         if (this._msgRef && this._msgListener) {
             this._msgRef.off('value', this._msgListener);
@@ -233,14 +235,12 @@ class MessagingApp {
             this._msgListener = null;
         }
     }
-
+ 
     render() {
         this.updateAuthUI();
-        if (this.currentUser) {
-            this.updateAppUI();
-        }
+        if (this.currentUser) this.updateAppUI();
     }
-
+ 
     updateAuthUI() {
         const authContainer = document.getElementById('authContainer');
         const appContainer = document.getElementById('appContainer');
@@ -252,41 +252,41 @@ class MessagingApp {
             appContainer.classList.add('hidden');
         }
     }
-
+ 
     async updateAppUI() {
         this.updateCurrentUserDisplay();
         await this.updateFriendsList();
         await this.updateConversationsList();
         await this.updateChatView();
     }
-
+ 
     updateCurrentUserDisplay() {
         const display = document.getElementById('currentUserDisplay');
         if (display) display.textContent = '@' + this.currentUser.username;
     }
-
+ 
     async updateFriendsList() {
         const list = document.getElementById('friendsList');
         const datalist = document.getElementById('friendList');
         const inviteSelect = document.getElementById('inviteFriendSelect');
         const reqList = document.getElementById('friendRequestsList');
         if (!list || !datalist || !inviteSelect || !reqList) return;
-
+ 
         const [friends, requests, outgoing] = await Promise.all([
             this.getFriendsForCurrent(),
             this.getFriendRequestsForCurrent(),
             this.getOutgoingFriendRequests()
         ]);
-
+ 
         list.innerHTML = '';
         datalist.innerHTML = '';
         inviteSelect.innerHTML = '';
         reqList.innerHTML = '';
-
+ 
         if (requests.length > 0) {
             const header = document.createElement('div');
-            header.style.cssText = 'font-size:13px;color:#333;margin-bottom:4px;';
-            header.textContent = 'Friend Requests';
+            header.style.cssText = 'font-size:11px;color:#333;margin-bottom:3px;font-weight:600;padding:4px 0 2px 0;';
+            header.textContent = 'Incoming Requests';
             reqList.appendChild(header);
             requests.forEach(from => {
                 const item = document.createElement('div');
@@ -305,10 +305,10 @@ class MessagingApp {
                 reqList.appendChild(item);
             });
         }
-
+ 
         if (outgoing.length > 0) {
             const hdr2 = document.createElement('div');
-            hdr2.style.cssText = 'font-size:13px;color:#333;margin-bottom:4px;';
+            hdr2.style.cssText = 'font-size:11px;color:#333;margin-bottom:3px;font-weight:600;padding:4px 0 2px 0;';
             hdr2.textContent = 'Pending (sent)';
             reqList.appendChild(hdr2);
             outgoing.forEach(to => {
@@ -323,7 +323,7 @@ class MessagingApp {
                 reqList.appendChild(item);
             });
         }
-
+ 
         friends.forEach(f => {
             const item = document.createElement('div');
             item.className = 'friend-item';
@@ -334,15 +334,11 @@ class MessagingApp {
             rm.onclick = async () => { await this.removeFriend(f); await this.updateFriendsList(); };
             item.appendChild(rm);
             list.appendChild(item);
-            const opt = document.createElement('option');
-            opt.value = f;
-            datalist.appendChild(opt);
-            const invOpt = document.createElement('option');
-            invOpt.value = f;
-            inviteSelect.appendChild(invOpt);
+            const opt = document.createElement('option'); opt.value = f; datalist.appendChild(opt);
+            const invOpt = document.createElement('option'); invOpt.value = f; inviteSelect.appendChild(invOpt);
         });
     }
-
+ 
     async handleAddFriend(name) {
         const errorEl = document.getElementById('addFriendError');
         if (!name) return;
@@ -350,17 +346,16 @@ class MessagingApp {
             const result = await this.sendFriendRequest(name);
             if (result.success) {
                 document.getElementById('addFriendInput').value = '';
-                if (errorEl) errorEl.textContent = 'Request sent';
+                if (errorEl) { errorEl.style.color = '#667eea'; errorEl.textContent = 'Request sent!'; }
                 await this.updateFriendsList();
             } else {
-                if (errorEl) errorEl.textContent = result.error;
-                else alert(result.error);
+                if (errorEl) { errorEl.style.color = '#ff6b6b'; errorEl.textContent = result.error; }
             }
         } catch (err) {
-            if (errorEl) errorEl.textContent = 'Error: ' + err.message;
+            if (errorEl) { errorEl.style.color = '#ff6b6b'; errorEl.textContent = 'Error: ' + err.message; }
         }
     }
-
+ 
     async handleInviteFriend() {
         const select = document.getElementById('inviteFriendSelect');
         const friend = select.value;
@@ -373,7 +368,7 @@ class MessagingApp {
             alert('Error: ' + err.message);
         }
     }
-
+ 
     async updateConversationsList() {
         const list = document.getElementById('conversationsList');
         list.innerHTML = '';
@@ -386,7 +381,7 @@ class MessagingApp {
             ...directUsers.map(u => ({ name: u, type: 'user' }))
         ];
         if (conversations.length === 0) {
-            list.innerHTML = '<p style="color:#999;padding:20px 5px;text-align:center;font-size:12px;">No conversations yet</p>';
+            list.innerHTML = '<p style="color:#999;padding:15px 5px;text-align:center;font-size:12px;">No conversations yet</p>';
             return;
         }
         conversations.forEach(conv => {
@@ -399,7 +394,7 @@ class MessagingApp {
             nameSpan.textContent = (type === 'room' ? '#' : '@') + name;
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'conversation-delete';
-            deleteBtn.textContent = type === 'room' ? 'Leave' : 'Delete';
+            deleteBtn.textContent = type === 'room' ? 'Leave' : 'Del';
             deleteBtn.onclick = async (e) => {
                 e.stopPropagation();
                 if (type === 'room') { await this.leaveRoom(name); } else { await this.deleteConversation(name); }
@@ -410,14 +405,16 @@ class MessagingApp {
             list.appendChild(item);
         });
     }
-
+ 
     async selectChat(name, type = 'user') {
         this.currentChat = name;
         this.currentChatType = type;
+        this.replyingTo = null;
+        this.closeEmojiPicker();
         this.attachMessageListener();
         await this.updateAppUI();
     }
-
+ 
     async updateChatView() {
         const noChatSelected = document.getElementById('noChatSelected');
         const chatView = document.getElementById('chatView');
@@ -435,19 +432,68 @@ class MessagingApp {
             const partSnap = await this.db.ref('rooms/' + this.currentChat + '/participants').get();
             const participants = partSnap.exists() ? Object.keys(partSnap.val()) : [];
             const avail = friends.filter(f => !participants.includes(f));
-            if (avail.length > 0) { inviteSection.classList.remove('hidden'); } else { inviteSection.classList.add('hidden'); }
+            inviteSection.classList.toggle('hidden', avail.length === 0);
         } else if (inviteSection) {
             inviteSection.classList.add('hidden');
         }
     }
-
+ 
+    // =====================
+    // Reply
+    // =====================
+ 
+    setReply(msg) {
+        this.replyingTo = msg;
+        const bar = document.getElementById('replyBar');
+        const nameEl = document.getElementById('replyToName');
+        const previewEl = document.getElementById('replyPreviewText');
+        bar.classList.remove('hidden');
+        nameEl.textContent = msg.from === this.currentUser.username ? 'yourself' : '@' + msg.from;
+        previewEl.textContent = msg.type === 'file' ? (msg.filename || 'image') : (msg.text ? msg.text.substring(0, 60) : '');
+        document.getElementById('messageInput').focus();
+    }
+ 
+    cancelReply() {
+        this.replyingTo = null;
+        document.getElementById('replyBar').classList.add('hidden');
+    }
+ 
+    // =====================
+    // Emoji
+    // =====================
+ 
+    toggleEmojiPicker() {
+        const picker = document.getElementById('emojiPicker');
+        this.emojiPickerOpen = !this.emojiPickerOpen;
+        picker.classList.toggle('hidden', !this.emojiPickerOpen);
+    }
+ 
+    closeEmojiPicker() {
+        this.emojiPickerOpen = false;
+        const picker = document.getElementById('emojiPicker');
+        if (picker) picker.classList.add('hidden');
+    }
+ 
+    insertEmoji(emoji) {
+        const input = document.getElementById('messageInput');
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        input.focus();
+    }
+ 
+    // =====================
+    // Render Messages
+    // =====================
+ 
     renderMessagesFromData(messages) {
         const container = document.getElementById('messagesContainer');
         if (!container) return;
         container.innerHTML = '';
         if (messages.length === 0) {
             const placeholder = document.createElement('div');
-            placeholder.style.cssText = 'color:#999;text-align:center;margin-top:20px;';
+            placeholder.style.cssText = 'color:#999;text-align:center;margin-top:20px;font-size:14px;';
             placeholder.textContent = 'No messages yet';
             container.appendChild(placeholder);
             return;
@@ -457,8 +503,31 @@ class MessagingApp {
                 msg.from.toLowerCase() === this.currentUser.username.toLowerCase();
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message ' + (sent ? 'sent' : 'received');
+ 
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'message-sender';
+            senderDiv.textContent = sent ? 'You' : '@' + msg.from;
+            messageDiv.appendChild(senderDiv);
+ 
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
+ 
+            // Reply quote
+            if (msg.replyTo) {
+                const quote = document.createElement('div');
+                quote.className = 'reply-quote';
+                const quoteAuthor = document.createElement('div');
+                quoteAuthor.className = 'reply-quote-author';
+                quoteAuthor.textContent = msg.replyTo.from === this.currentUser.username ? 'You' : '@' + msg.replyTo.from;
+                const quoteText = document.createElement('div');
+                quoteText.className = 'reply-quote-text';
+                quoteText.textContent = msg.replyTo.type === 'file' ? (msg.replyTo.filename || 'image') : (msg.replyTo.text || '');
+                quote.appendChild(quoteAuthor);
+                quote.appendChild(quoteText);
+                bubble.appendChild(quote);
+            }
+ 
+            // Content
             if (msg.type === 'file') {
                 if (msg.data && msg.data.startsWith('data:image')) {
                     const img = document.createElement('img');
@@ -476,10 +545,10 @@ class MessagingApp {
                         document.body.appendChild(overlay);
                     };
                     bubble.appendChild(img);
-                    const name = document.createElement('div');
-                    name.textContent = msg.filename;
-                    name.style.fontSize = '12px';
-                    bubble.appendChild(name);
+                    const fname = document.createElement('div');
+                    fname.textContent = msg.filename;
+                    fname.style.cssText = 'font-size:11px;margin-top:4px;';
+                    bubble.appendChild(fname);
                 } else {
                     const link = document.createElement('a');
                     link.href = msg.data;
@@ -490,20 +559,32 @@ class MessagingApp {
             } else {
                 bubble.textContent = msg.text;
             }
+ 
+            messageDiv.appendChild(bubble);
+ 
+            // Meta row
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
             const timestamp = document.createElement('div');
             timestamp.className = 'message-timestamp';
             timestamp.textContent = this.formatTime(new Date(msg.timestamp));
-            const senderDiv = document.createElement('div');
-            senderDiv.className = 'message-sender';
-            senderDiv.textContent = sent ? 'You' : '@' + msg.from;
-            messageDiv.appendChild(bubble);
-            messageDiv.appendChild(timestamp);
-            messageDiv.appendChild(senderDiv);
+            const replyBtn = document.createElement('button');
+            replyBtn.className = 'reply-btn';
+            replyBtn.textContent = '↩ Reply';
+            replyBtn.onclick = () => this.setReply(msg);
+            if (sent) {
+                meta.appendChild(replyBtn);
+                meta.appendChild(timestamp);
+            } else {
+                meta.appendChild(timestamp);
+                meta.appendChild(replyBtn);
+            }
+            messageDiv.appendChild(meta);
             container.appendChild(messageDiv);
         });
         setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
     }
-
+ 
     formatTime(date) {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -514,7 +595,11 @@ class MessagingApp {
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
     }
-
+ 
+    // =====================
+    // Event Listeners
+    // =====================
+ 
     initializeEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', () => this.handleLogin());
         document.getElementById('signupBtn').addEventListener('click', () => this.handleSignup());
@@ -542,14 +627,10 @@ class MessagingApp {
             }
         });
         document.getElementById('addFriendBtn').addEventListener('click', () => {
-            const name = document.getElementById('addFriendInput').value.trim();
-            this.handleAddFriend(name);
+            this.handleAddFriend(document.getElementById('addFriendInput').value.trim());
         });
         document.getElementById('addFriendInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const name = document.getElementById('addFriendInput').value.trim();
-                this.handleAddFriend(name);
-            }
+            if (e.key === 'Enter') this.handleAddFriend(document.getElementById('addFriendInput').value.trim());
         });
         document.getElementById('inviteFriendBtn').addEventListener('click', () => this.handleInviteFriend());
         document.getElementById('exportQrBtn').addEventListener('click', () => this.showQrExportModal());
@@ -557,9 +638,8 @@ class MessagingApp {
         document.getElementById('downloadQrBtn').addEventListener('click', () => {
             const canvas = document.querySelector('#qrCodeContainer canvas');
             if (canvas) {
-                const url = canvas.toDataURL('image/png');
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = canvas.toDataURL('image/png');
                 a.download = 'securemessage_qr.png';
                 a.click();
             }
@@ -567,8 +647,19 @@ class MessagingApp {
         document.getElementById('stopScanBtn').addEventListener('click', () => this.stopScanner());
         document.getElementById('helpBtn').addEventListener('click', () => this.showHelpModal());
         document.getElementById('submitFeedbackBtn').addEventListener('click', () => this.submitFeedback());
+        document.getElementById('emojiBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleEmojiPicker();
+        });
+        document.addEventListener('click', (e) => {
+            const picker = document.getElementById('emojiPicker');
+            const btn = document.getElementById('emojiBtn');
+            if (picker && !picker.contains(e.target) && e.target !== btn) {
+                this.closeEmojiPicker();
+            }
+        });
     }
-
+ 
     async handleLogin() {
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
@@ -588,7 +679,7 @@ class MessagingApp {
             errorDiv.textContent = 'Error: ' + err.message;
         }
     }
-
+ 
     async handleSignup() {
         const username = document.getElementById('signupUsername').value.trim();
         const password = document.getElementById('signupPassword').value;
@@ -611,23 +702,34 @@ class MessagingApp {
             errorDiv.textContent = 'Error: ' + err.message;
         }
     }
-
+ 
     async handleSendMessage() {
         const input = document.getElementById('messageInput');
         const text = input.value;
         if (!text.trim() || !this.currentChat) return;
+        this.closeEmojiPicker();
+        const content = { type: 'text', text };
+        if (this.replyingTo) {
+            content.replyTo = {
+                from: this.replyingTo.from,
+                text: this.replyingTo.text || null,
+                filename: this.replyingTo.filename || null,
+                type: this.replyingTo.type
+            };
+        }
         try {
             if (this.currentChatType === 'room') {
-                await this.saveRoomMessage(this.currentChat, this.currentUser.username, { type: 'text', text });
+                await this.saveRoomMessage(this.currentChat, this.currentUser.username, content);
             } else {
-                await this.saveMessage(this.currentUser.username, this.currentChat, { type: 'text', text });
+                await this.saveMessage(this.currentUser.username, this.currentChat, content);
             }
             input.value = '';
+            this.cancelReply();
         } catch (err) {
             alert('Failed to send message: ' + err.message);
         }
     }
-
+ 
     async handleSendFile() {
         const fileInput = document.getElementById('fileInput');
         if (!(fileInput && fileInput.files && fileInput.files[0]) || !this.currentChat) return;
@@ -636,12 +738,21 @@ class MessagingApp {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const fileObj = { type: 'file', filename: file.name, data: e.target.result };
+            if (this.replyingTo) {
+                fileObj.replyTo = {
+                    from: this.replyingTo.from,
+                    text: this.replyingTo.text || null,
+                    filename: this.replyingTo.filename || null,
+                    type: this.replyingTo.type
+                };
+            }
             try {
                 if (this.currentChatType === 'room') {
                     await this.saveRoomMessage(this.currentChat, this.currentUser.username, fileObj);
                 } else {
                     await this.saveMessage(this.currentUser.username, this.currentChat, fileObj);
                 }
+                this.cancelReply();
             } catch (err) {
                 alert('Failed to save file: ' + err.message);
             }
@@ -650,7 +761,7 @@ class MessagingApp {
         reader.onerror = () => alert('Failed to read file');
         reader.readAsDataURL(file);
     }
-
+ 
     async handleStartChat() {
         const type = document.getElementById('chatTypeSelect').value;
         const nameInput = document.getElementById('chatNameInput');
@@ -672,8 +783,7 @@ class MessagingApp {
                 if (!result.success) { alert(result.error); return; }
                 this.currentChatType = 'room';
                 this.currentChat = name;
-                nameInput.value = '';
-                pwInput.value = '';
+                nameInput.value = ''; pwInput.value = '';
                 this.attachMessageListener();
                 await this.updateAppUI();
             } else if (type === 'room-join') {
@@ -682,8 +792,7 @@ class MessagingApp {
                 if (!result.success) { alert(result.error); return; }
                 this.currentChatType = 'room';
                 this.currentChat = name;
-                nameInput.value = '';
-                pwInput.value = '';
+                nameInput.value = ''; pwInput.value = '';
                 this.attachMessageListener();
                 await this.updateAppUI();
             }
@@ -691,7 +800,7 @@ class MessagingApp {
             alert('Error: ' + err.message);
         }
     }
-
+ 
     showQrExportModal() {
         document.getElementById('qrExportModal').classList.remove('hidden');
         const container = document.getElementById('qrCodeContainer');
@@ -703,21 +812,19 @@ class MessagingApp {
         });
         container.appendChild(qr.canvas);
     }
-
-    closeQrExportModal() {
-        document.getElementById('qrExportModal').classList.add('hidden');
-    }
-
+ 
+    closeQrExportModal() { document.getElementById('qrExportModal').classList.add('hidden'); }
+ 
     showQrImportModal() {
         document.getElementById('qrImportModal').classList.remove('hidden');
         this.startScanner();
     }
-
+ 
     closeQrImportModal() {
         document.getElementById('qrImportModal').classList.add('hidden');
         this.stopScanner();
     }
-
+ 
     startScanner() {
         if (this.html5QrCode) return;
         this.html5QrCode = new Html5Qrcode('qrReaderContainer');
@@ -735,7 +842,7 @@ class MessagingApp {
             document.getElementById('qrStatus').textContent = 'Camera not available';
         });
     }
-
+ 
     stopScanner() {
         if (this.html5QrCode) {
             this.html5QrCode.stop().then(() => {
@@ -744,7 +851,7 @@ class MessagingApp {
             }).catch(err => console.error('Error stopping scanner', err));
         }
     }
-
+ 
     importData(json) {
         try {
             const data = JSON.parse(json);
@@ -756,22 +863,20 @@ class MessagingApp {
             alert('Failed to parse QR data');
         }
     }
-
+ 
     // =====================
     // Help & Feedback
     // =====================
-
-    showHelpModal() {
-        document.getElementById('helpModal').classList.remove('hidden');
-    }
-
+ 
+    showHelpModal() { document.getElementById('helpModal').classList.remove('hidden'); }
+ 
     closeHelpModal() {
         document.getElementById('helpModal').classList.add('hidden');
         document.getElementById('feedbackSubject').value = '';
         document.getElementById('feedbackMessage').value = '';
         document.getElementById('feedbackStatus').textContent = '';
     }
-
+ 
     async submitFeedback() {
         const type = document.getElementById('feedbackType').value;
         const subject = document.getElementById('feedbackSubject').value.trim();
@@ -784,9 +889,7 @@ class MessagingApp {
         }
         try {
             await this.db.ref('feedback').push({
-                type,
-                subject,
-                message,
+                type, subject, message,
                 from: this.currentUser ? this.currentUser.username : 'anonymous',
                 timestamp: new Date().toISOString()
             });
@@ -800,23 +903,57 @@ class MessagingApp {
         }
     }
 }
-
+ 
 // =====================
 // Initialize App
 // =====================
-
+ 
 let app;
-
+ 
 document.addEventListener('DOMContentLoaded', () => {
     app = new MessagingApp();
 });
-
+ 
 function toggleAuthForm(e) {
     e.preventDefault();
     document.getElementById('loginForm').classList.toggle('active');
     document.getElementById('signupForm').classList.toggle('active');
 }
-
+ 
+function toggleFriends() {
+    const el = document.getElementById('friendsCollapsible');
+    const icon = document.getElementById('friendsToggleIcon');
+    el.classList.toggle('hidden');
+    icon.textContent = el.classList.contains('hidden') ? '▼' : '▲';
+}
+ 
+function toggleNewChat() {
+    const el = document.getElementById('newChatCollapsible');
+    const icon = document.getElementById('newChatToggleIcon');
+    el.classList.toggle('hidden');
+    icon.textContent = el.classList.contains('hidden') ? '▼' : '▲';
+}
+ 
+function cancelReply() { if (app) app.cancelReply(); }
 function closeQrExportModal() { if (app) app.closeQrExportModal(); }
 function closeQrImportModal() { if (app) app.closeQrImportModal(); }
 function closeHelpModal() { if (app) app.closeHelpModal(); }
+ 
+function showEmojiCategory(category) {
+    const grid = document.getElementById('emojiGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const emojis = EMOJI_CATEGORIES[category] || [];
+    emojis.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.className = 'emoji-btn';
+        btn.textContent = emoji;
+        btn.onclick = (e) => { e.stopPropagation(); if (app) app.insertEmoji(emoji); };
+        grid.appendChild(btn);
+    });
+    document.querySelectorAll('.emoji-tab').forEach(tab => tab.classList.remove('active'));
+    const tabs = ['smileys','gestures','hearts','animals','food','activities','travel','symbols'];
+    const idx = tabs.indexOf(category);
+    const tabEls = document.querySelectorAll('.emoji-tab');
+    if (tabEls[idx]) tabEls[idx].classList.add('active');
+}
