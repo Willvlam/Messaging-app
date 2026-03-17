@@ -8,16 +8,16 @@
     <script>if(!window.location.hash) window.location.replace(window.location.href + '#');</script>
 </head>
 <body>
- 
+
     <div id="errorBox" style="display:none;position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:15px;font-size:14px;z-index:9999;word-wrap:break-word;"></div>
- 
+
     <div id="app">
         <!-- Auth Flow -->
         <div id="authContainer" class="container">
             <div class="auth-box">
                 <h1>SecureMessage</h1>
                 <p class="subtitle">Private messaging without tracking</p>
- 
+
                 <div id="loginForm" class="auth-form active">
                     <h2>Login</h2>
                     <input type="text" id="loginUsername" placeholder="Username" class="input-field">
@@ -26,7 +26,7 @@
                     <p class="auth-toggle">Don't have an account? <a href="#" onclick="toggleAuthForm(event)">Sign Up</a></p>
                     <div id="loginError" class="error-message"></div>
                 </div>
- 
+
                 <div id="signupForm" class="auth-form">
                     <h2>Create Account</h2>
                     <input type="text" id="signupUsername" placeholder="Username" class="input-field">
@@ -38,7 +38,7 @@
                 </div>
             </div>
         </div>
- 
+
         <!-- Main App -->
         <div id="appContainer" class="container hidden">
             <div class="main-layout">
@@ -52,7 +52,7 @@
                             <button id="logoutBtn" class="btn btn-logout">Logout</button>
                         </div>
                     </div>
- 
+
                     <!-- Collapsible Friends -->
                     <div class="friends-section">
                         <h3 class="collapsible-header" onclick="toggleFriends()">
@@ -68,7 +68,7 @@
                             <div id="friendsList" class="friends-list"></div>
                         </div>
                     </div>
- 
+
                     <!-- Collapsible New Chat -->
                     <div class="new-chat-section">
                         <h3 class="collapsible-header" onclick="toggleNewChat()">
@@ -89,31 +89,33 @@
                             </div>
                         </div>
                     </div>
- 
+
                     <h3 class="section-label">Conversations</h3>
                     <div id="conversationsList" class="conversations-list"></div>
- 
-                    <!-- Help Button -->
+
                     <div class="help-section">
                         <button id="helpBtn" class="btn btn-help">Help & Feedback</button>
                     </div>
                 </div>
- 
+
                 <!-- Chat Area -->
                 <div class="chat-area">
                     <div id="noChatSelected" class="no-chat-selected">
                         <h2>Select a conversation or start a new one</h2>
                     </div>
- 
+
                     <div id="chatView" class="chat-view hidden">
                         <div class="chat-header">
                             <h2 id="chatWith"></h2>
-                            <div id="roomInviteSection" class="room-invite hidden">
-                                <select id="inviteFriendSelect" class="input-field"></select>
-                                <button id="inviteFriendBtn" class="btn btn-secondary">Invite</button>
+                            <div class="chat-header-actions">
+                                <button id="membersBtn" class="btn btn-small hidden">👥 Members</button>
+                                <div id="roomInviteSection" class="room-invite hidden">
+                                    <select id="inviteFriendSelect" class="input-field"></select>
+                                    <button id="inviteFriendBtn" class="btn btn-secondary">Invite</button>
+                                </div>
                             </div>
                         </div>
- 
+
                         <!-- Reply preview bar -->
                         <div id="replyBar" class="reply-bar hidden">
                             <div class="reply-bar-content">
@@ -122,9 +124,9 @@
                             </div>
                             <button class="reply-cancel" onclick="cancelReply()">✕</button>
                         </div>
- 
+
                         <div id="messagesContainer" class="messages-container"></div>
- 
+
                         <div class="message-input-area">
                             <button id="emojiBtn" class="btn btn-emoji">😊</button>
                             <input type="text" id="messageInput" placeholder="Type a message..." class="input-field">
@@ -132,7 +134,7 @@
                             <button id="sendBtn" class="btn btn-primary">Send</button>
                             <button id="sendFileBtn" class="btn btn-secondary">File</button>
                         </div>
- 
+
                         <!-- Emoji Picker -->
                         <div id="emojiPicker" class="emoji-picker hidden">
                             <div class="emoji-tabs">
@@ -151,7 +153,20 @@
                 </div>
             </div>
         </div>
- 
+
+        <!-- Members Modal -->
+        <div id="membersModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Room Members</h2>
+                    <button class="modal-close" onclick="closeMembersModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="membersList" class="members-list"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Help / Feedback Modal -->
         <div id="helpModal" class="modal hidden">
             <div class="modal-content">
@@ -174,7 +189,7 @@
                 </div>
             </div>
         </div>
- 
+
         <!-- QR Export Modal -->
         <div id="qrExportModal" class="modal hidden">
             <div class="modal-content">
@@ -189,7 +204,7 @@
                 </div>
             </div>
         </div>
- 
+
         <!-- QR Import Modal -->
         <div id="qrImportModal" class="modal hidden">
             <div class="modal-content">
@@ -206,32 +221,31 @@
             </div>
         </div>
     </div>
- 
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
- 
+
     <script>
-    const firebaseConfig = {
-  apiKey: "AIzaSyD57X2gOycQQBlPVJP9A-dAM1aUhtD3O_M",
-  authDomain: "messages-86258.firebaseapp.com",
-  databaseURL: "https://messages-86258-default-rtdb.firebaseio.com",
-  projectId: "messages-86258",
-  storageBucket: "messages-86258.firebasestorage.app",
-  messagingSenderId: "950693813090",
-  appId: "1:950693813090:web:74f8bc994ad3460fadea3b"
-};
-firebase.initializeApp(firebaseConfig);
+        const firebaseConfig = {
+            apiKey: "AIzaSyD57X2gOycQQBlPVJP9A-dAM1aUhtD3O_M",
+            authDomain: "messages-86258.firebaseapp.com",
+            databaseURL: "https://messages-86258-default-rtdb.firebaseio.com",
+            projectId: "messages-86258",
+            storageBucket: "messages-86258.firebasestorage.app",
+            messagingSenderId: "950693813090",
+            appId: "1:950693813090:web:74f8bc994ad3460fadea3b"
+        };
+        firebase.initializeApp(firebaseConfig);
     </script>
 
- 
     <!-- QR libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
- 
+
     <!-- App -->
     <script src="app.js"></script>
- 
+
     <script>
         window.onerror = function(msg, src, line, col, err) {
             const box = document.getElementById('errorBox');
@@ -240,6 +254,6 @@ firebase.initializeApp(firebaseConfig);
             return false;
         };
     </script>
- 
+
 </body>
 </html>
