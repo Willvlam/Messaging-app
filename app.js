@@ -828,6 +828,15 @@ class MessagingApp {
 
         // /evan command — sends a random Evan image as BOT
         if (text.trim().toLowerCase() === '/evan') {
+            const lastEvan = sessionStorage.getItem('lastEvan');
+            const cooldown = 30 * 1000;
+            if (lastEvan && Date.now() - parseInt(lastEvan) < cooldown) {
+                const remaining = Math.ceil((cooldown - (Date.now() - parseInt(lastEvan))) / 1000);
+                alert('\u23f3 Slow down! You can use /evan again in ' + remaining + ' seconds.');
+                input.value = '';
+                return;
+            }
+            sessionStorage.setItem('lastEvan', Date.now().toString());
             input.value = '';
             const num = Math.floor(Math.random() * 8) + 1;
             const imageUrl = 'https://willvlam.github.io/Messaging-app/evan/' + num + '.png';
