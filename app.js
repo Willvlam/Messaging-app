@@ -867,8 +867,10 @@ class MessagingApp {
         });
         document.getElementById('stopScanBtn').addEventListener('click', () => this.stopScanner());
         document.getElementById('helpBtn').addEventListener('click', () => this.showHelpModal());
-        document.getElementById('spyBtn').addEventListener('click', () => this.handleSpyView());
-        document.getElementById('spyUser2').addEventListener('keypress', (e) => {
+        const spyBtn = document.getElementById('spyBtn');
+        if (spyBtn) spyBtn.addEventListener('click', () => this.handleSpyView());
+        const spyUser2 = document.getElementById('spyUser2');
+        if (spyUser2) spyUser2.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleSpyView();
         });
         document.getElementById('submitFeedbackBtn').addEventListener('click', () => this.submitFeedback());
