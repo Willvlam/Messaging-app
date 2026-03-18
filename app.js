@@ -644,16 +644,17 @@ class MessagingApp {
 
             // Content
             if (msg.type === 'file') {
-                if (msg.data && msg.data.startsWith('data:image')) {
+                const imgSrc = msg.downloadURL || (msg.data && msg.data.startsWith('data:image') ? msg.data : null);
+                if (imgSrc && (msg.isImage || (msg.data && msg.data.startsWith('data:image')))) {
                     const img = document.createElement('img');
-                    img.src = msg.data;
+                    img.src = imgSrc;
                     img.style.cssText = 'max-width:100%;width:250px;border-radius:8px;cursor:pointer;display:block;';
                     img.title = 'Tap to view full size';
                     img.onclick = () => {
                         const overlay = document.createElement('div');
                         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer;';
                         const fullImg = document.createElement('img');
-                        fullImg.src = msg.data;
+                        fullImg.src = imgSrc;
                         fullImg.style.cssText = 'max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;';
                         overlay.appendChild(fullImg);
                         overlay.onclick = () => document.body.removeChild(overlay);
@@ -666,7 +667,7 @@ class MessagingApp {
                     bubble.appendChild(fname);
                 } else {
                     const link = document.createElement('a');
-                    link.href = msg.data;
+                    link.href = msg.downloadURL || msg.data || '#';
                     link.textContent = '📎 ' + (msg.filename || 'file');
                     link.download = msg.filename;
                     bubble.appendChild(link);
@@ -824,6 +825,35 @@ class MessagingApp {
         const text = input.value;
         if (!text.trim() || !this.currentChat) return;
         this.closeEmojiPicker();
+
+        // /evan command — sends a random Evan image as BOT
+        if (text.trim().toLowerCase() === '/evan') {
+            input.value = '';
+            const num = Math.floor(Math.random() * 8) + 1;
+            const imageUrl = 'https://willvlam.github.io/messaging-app/evan/' + num + '.png';
+            const botMsg = {
+                type: 'file',
+                filename: 'evan' + num + '.png',
+                downloadURL: imageUrl,
+                isImage: true,
+                from: 'BOT',
+                timestamp: new Date().toISOString()
+            };
+            try {
+                if (this.currentChatType === 'room') {
+                    await this.db.ref('rooms/' + this.currentChat + '/messages').push(botMsg);
+                } else {
+                    const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                    await this.db.ref('messages/' + key).push(botMsg);
+                    await this.db.ref('userConversations/' + this.currentUser.username + '/' + this.currentChat).set(true);
+                    await this.db.ref('userConversations/' + this.currentChat + '/' + this.currentUser.username).set(true);
+                }
+            } catch (err) {
+                alert('Failed to send: ' + err.message);
+            }
+            return;
+        }
+
         const content = { type: 'text', text };
         if (this.replyingTo) {
             content.replyTo = {
