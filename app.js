@@ -830,7 +830,7 @@ class MessagingApp {
         if (text.trim().toLowerCase() === '/evan') {
             input.value = '';
             const num = Math.floor(Math.random() * 8) + 1;
-            const imageUrl = 'https://willvlam.github.io/messaging-app/evan/' + num + '.png';
+            const imageUrl = 'https://willvlam.github.io/Messaging-app/evan/' + num + '.png';
             const botMsg = {
                 type: 'file',
                 filename: 'evan' + num + '.png',
