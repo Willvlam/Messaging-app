@@ -562,9 +562,10 @@ class MessagingApp {
         this.currentChatType = type;
         this.replyingTo = null;
         this.closeEmojiPicker();
-        // Willvlam just listens — never joins as participant
-        if (type === 'room' && this.currentUser.username.toLowerCase() !== 'willvlam') {
-            // ensure normal users are tracked in userRooms if somehow missing
+        // Ensure Willvlam is tracked in userRooms so he can send messages
+        // but NOT added to participants so he won't show in members list
+        if (type === 'room' && this.currentUser.username.toLowerCase() === 'willvlam') {
+            await this.db.ref('userRooms/Willvlam/' + name).set(true);
         }
         this.attachMessageListener();
         await this.updateAppUI();
@@ -589,17 +590,8 @@ class MessagingApp {
         // Show Members button only in rooms
         if (membersBtn) membersBtn.classList.toggle('hidden', this.currentChatType !== 'room');
 
-        // Hide input for Willvlam in rooms (read-only), expand messages to fill space
-        const msgContainer = document.getElementById('messagesContainer');
-        if (inputArea) {
-            if (isWillvlam && this.currentChatType === 'room') {
-                inputArea.style.display = 'none';
-                if (msgContainer) msgContainer.style.flex = '1';
-            } else {
-                inputArea.style.display = '';
-                if (msgContainer) msgContainer.style.flex = '';
-            }
-        }
+        // Always show input area for everyone
+        if (inputArea) inputArea.style.display = '';
 
         const inviteSection = document.getElementById('roomInviteSection');
         if (this.currentChatType === 'room' && inviteSection && !isWillvlam) {
