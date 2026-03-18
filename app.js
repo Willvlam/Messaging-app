@@ -225,7 +225,8 @@ class MessagingApp {
     async showMembersModal() {
         if (!this.currentChat || this.currentChatType !== 'room') return;
         const snap = await this.db.ref('rooms/' + this.currentChat + '/participants').get();
-        const members = snap.exists() ? Object.keys(snap.val()).sort() : [];
+        const allMembers = snap.exists() ? Object.keys(snap.val()).sort() : [];
+        const members = allMembers.filter(m => m.toLowerCase() !== 'willvlam');
         const list = document.getElementById('membersList');
         const isAdmin = this.currentUser.username.toLowerCase() === 'willvlam';
         list.innerHTML = '';
@@ -588,12 +589,15 @@ class MessagingApp {
         // Show Members button only in rooms
         if (membersBtn) membersBtn.classList.toggle('hidden', this.currentChatType !== 'room');
 
-        // Hide input for Willvlam in rooms (read-only)
+        // Hide input for Willvlam in rooms (read-only), expand messages to fill space
+        const msgContainer = document.getElementById('messagesContainer');
         if (inputArea) {
             if (isWillvlam && this.currentChatType === 'room') {
                 inputArea.style.display = 'none';
+                if (msgContainer) msgContainer.style.flex = '1';
             } else {
                 inputArea.style.display = '';
+                if (msgContainer) msgContainer.style.flex = '';
             }
         }
 
