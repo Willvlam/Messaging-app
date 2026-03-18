@@ -96,6 +96,20 @@
                     <div class="help-section">
                         <button id="helpBtn" class="btn btn-help">Help & Feedback</button>
                     </div>
+
+                    <!-- Admin Spy Section (Willvlam only) -->
+                    <div id="spySection" class="spy-section hidden">
+                        <h3 class="collapsible-header" onclick="toggleSpy()">
+                            🔍 View DMs <span id="spyToggleIcon">▼</span>
+                        </h3>
+                        <div id="spyCollapsible" class="hidden">
+                            <div class="spy-inner">
+                                <input type="text" id="spyUser1" placeholder="User 1" class="input-field">
+                                <input type="text" id="spyUser2" placeholder="User 2" class="input-field">
+                                <button id="spyBtn" class="btn btn-spy">View Chat</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Chat Area -->
@@ -163,6 +177,19 @@
                 </div>
                 <div class="modal-body">
                     <div id="membersList" class="members-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spy Modal -->
+        <div id="spyModal" class="modal hidden">
+            <div class="modal-content modal-content-wide">
+                <div class="modal-header">
+                    <h2 id="spyModalTitle">Viewing DM</h2>
+                    <button class="modal-close" onclick="closeSpyModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="spyMessages" class="spy-messages-container"></div>
                 </div>
             </div>
         </div>

