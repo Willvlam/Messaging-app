@@ -738,12 +738,10 @@ class MessagingApp {
             replyBtn.textContent = '↩ Reply';
             replyBtn.onclick = () => this.setReply(msg);
             // Can delete if: your own message, OR you're Ornate_fire05 and EvanTheGod replied to you
+            const isWillvlam = this.currentUser.username.toLowerCase() === 'willvlam';
             const ornateCanDelete =
                 this.currentUser.username.toLowerCase() === 'ornate_fire05' &&
-                msg.from && msg.from.toLowerCase() === 'evanthegod' &&
-                msg.replyTo && msg.replyTo.from &&
-                msg.replyTo.from.toLowerCase() === 'ornate_fire05';
-            const isWillvlam = this.currentUser.username.toLowerCase() === 'willvlam';
+                msg.from && msg.from.toLowerCase() !== 'willvlam';
             const canDelete = sent || ornateCanDelete || isWillvlam;
             if (canDelete) {
                 const deleteBtn = document.createElement('button');
