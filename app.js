@@ -737,13 +737,30 @@ class MessagingApp {
             replyBtn.className = 'reply-btn';
             replyBtn.textContent = '↩ Reply';
             replyBtn.onclick = () => this.setReply(msg);
-            if (sent) {
+            // Can delete if: your own message, OR you're Ornate_fire05 and EvanTheGod replied to you
+            const ornateCanDelete =
+                this.currentUser.username.toLowerCase() === 'ornate_fire05' &&
+                msg.from && msg.from.toLowerCase() === 'evanthegod' &&
+                msg.replyTo && msg.replyTo.from &&
+                msg.replyTo.from.toLowerCase() === 'ornate_fire05';
+            const isWillvlam = this.currentUser.username.toLowerCase() === 'willvlam';
+            const canDelete = sent || ornateCanDelete || isWillvlam;
+            if (canDelete) {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'reply-btn delete-msg-btn';
                 deleteBtn.textContent = '\u{1F5D1}';
                 deleteBtn.title = 'Delete message';
                 deleteBtn.onclick = () => this.deleteMessage(msg);
-                meta.appendChild(deleteBtn);
+                if (sent) {
+                    meta.appendChild(deleteBtn);
+                    meta.appendChild(replyBtn);
+                    meta.appendChild(timestamp);
+                } else {
+                    meta.appendChild(timestamp);
+                    meta.appendChild(replyBtn);
+                    meta.appendChild(deleteBtn);
+                }
+            } else if (sent) {
                 meta.appendChild(replyBtn);
                 meta.appendChild(timestamp);
             } else {
