@@ -162,9 +162,10 @@ class MessagingApp {
     }
 
     async getUserRooms() {
-        // Willvlam sees all rooms without being a participant
+        // Willvlam reads from userRooms/Willvlam which only stores room name keys (no message data)
+        // This avoids downloading the entire rooms node which includes all messages
         if (this.currentUser.username.toLowerCase() === 'willvlam') {
-            const snap = await this.db.ref('rooms').get();
+            const snap = await this.db.ref('userRooms/Willvlam').get();
             return snap.exists() ? Object.keys(snap.val()).sort() : [];
         }
         const snap = await this.db.ref('userRooms/' + this.currentUser.username).get();
@@ -324,13 +325,18 @@ class MessagingApp {
             }
         } catch (e) { console.log('Cleanup error (messages):', e); }
         try {
-            const roomsSnap = await this.db.ref('rooms').get();
-            if (roomsSnap.exists()) {
-                roomsSnap.forEach(room => {
-                    room.child('messages').forEach(msg => {
-                        if (new Date(msg.val().timestamp).getTime() < cutoff) msg.ref.remove();
-                    });
-                });
+            // Only fetch room names first, then check messages per room
+            const roomNamesSnap = await this.db.ref('userRooms/Willvlam').get();
+            if (roomNamesSnap.exists()) {
+                const roomNames = Object.keys(roomNamesSnap.val());
+                for (const roomName of roomNames) {
+                    const msgsSnap = await this.db.ref('rooms/' + roomName + '/messages').get();
+                    if (msgsSnap.exists()) {
+                        msgsSnap.forEach(msg => {
+                            if (new Date(msg.val().timestamp).getTime() < cutoff) msg.ref.remove();
+                        });
+                    }
+                }
             }
         } catch (e) { console.log('Cleanup error (rooms):', e); }
     }
