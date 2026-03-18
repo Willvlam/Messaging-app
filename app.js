@@ -222,6 +222,7 @@ class MessagingApp {
         const snap = await this.db.ref('rooms/' + this.currentChat + '/participants').get();
         const members = snap.exists() ? Object.keys(snap.val()).sort() : [];
         const list = document.getElementById('membersList');
+        const isAdmin = this.currentUser.username.toLowerCase() === 'willvlam';
         list.innerHTML = '';
         members.forEach(member => {
             const item = document.createElement('div');
@@ -238,6 +239,13 @@ class MessagingApp {
                 badge.className = 'member-you-badge';
                 badge.textContent = 'You';
                 item.appendChild(badge);
+            } else if (isAdmin) {
+                const kickBtn = document.createElement('button');
+                kickBtn.className = 'member-kick-btn';
+                kickBtn.textContent = '✕';
+                kickBtn.title = 'Remove from room';
+                kickBtn.onclick = () => this.kickFromRoom(this.currentChat, member);
+                item.appendChild(kickBtn);
             }
             list.appendChild(item);
         });
@@ -246,6 +254,47 @@ class MessagingApp {
 
     closeMembersModal() {
         document.getElementById('membersModal').classList.add('hidden');
+    }
+
+    async deleteMessage(msg) {
+        if (!confirm('Delete this message?')) return;
+        try {
+            if (this.currentChatType === 'room') {
+                const snap = await this.db.ref('rooms/' + this.currentChat + '/messages').get();
+                if (snap.exists()) {
+                    snap.forEach(child => {
+                        const val = child.val();
+                        if (val.timestamp === msg.timestamp && val.from === msg.from) {
+                            child.ref.remove();
+                        }
+                    });
+                }
+            } else {
+                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                const snap = await this.db.ref('messages/' + key).get();
+                if (snap.exists()) {
+                    snap.forEach(child => {
+                        const val = child.val();
+                        if (val.timestamp === msg.timestamp && val.from === msg.from) {
+                            child.ref.remove();
+                        }
+                    });
+                }
+            }
+        } catch (err) {
+            alert('Failed to delete: ' + err.message);
+        }
+    }
+
+    async kickFromRoom(roomName, username) {
+        if (!confirm('Remove @' + username + ' from the room?')) return;
+        try {
+            await this.db.ref('rooms/' + roomName + '/participants/' + username).remove();
+            await this.db.ref('userRooms/' + username + '/' + roomName).remove();
+            await this.showMembersModal(); // refresh the list
+        } catch (err) {
+            alert('Failed to remove: ' + err.message);
+        }
     }
 
     // =====================
@@ -689,6 +738,12 @@ class MessagingApp {
             replyBtn.textContent = '↩ Reply';
             replyBtn.onclick = () => this.setReply(msg);
             if (sent) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'reply-btn delete-msg-btn';
+                deleteBtn.textContent = '\u{1F5D1}';
+                deleteBtn.title = 'Delete message';
+                deleteBtn.onclick = () => this.deleteMessage(msg);
+                meta.appendChild(deleteBtn);
                 meta.appendChild(replyBtn);
                 meta.appendChild(timestamp);
             } else {

@@ -333,6 +333,27 @@ body {
     border-radius: 10px;
 }
 
+.member-kick-btn {
+    margin-left: auto;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.member-kick-btn:hover { background: #ee5a52; }
+
+.delete-msg-btn { color: #ffaaaa !important; }
+.delete-msg-btn:hover { color: #ff6b6b !important; }
+
 /* =====================
    Reply Bar
 ===================== */
