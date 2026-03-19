@@ -1,4 +1,9 @@
 // =====================
+// Patch Note — update this before each git push
+// =====================
+const PATCH_NOTE = 'switch to child_added listener, remove /evan';
+
+// =====================
 // Emoji Data
 // =====================
 const EMOJI_CATEGORIES = {
@@ -950,6 +955,13 @@ class MessagingApp {
         const text = input.value;
         if (!text.trim() || !this.currentChat) return;
         this.closeEmojiPicker();
+
+        // /patch command — shows current patch note in input for easy copying
+        if (text.trim().toLowerCase() === '/patch') {
+            input.value = PATCH_NOTE;
+            input.select();
+            return;
+        }
 
         const content = { type: 'text', text };
         if (this.replyingTo) {
