@@ -348,6 +348,7 @@ class MessagingApp {
     attachMessageListener() {
         this.detachMessageListener();
         if (!this.currentChat) return;
+        this._messages = [];
         let ref;
         if (this.currentChatType === 'room') {
             ref = this.db.ref('rooms/' + this.currentChat + '/messages');
@@ -355,10 +356,17 @@ class MessagingApp {
             const key = this.getConversationKey(this.currentUser.username, this.currentChat);
             ref = this.db.ref('messages/' + key);
         }
-        const listener = ref.on('value', (snapshot) => {
-            const val = snapshot.val();
-            const msgs = val ? Object.values(val).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
-            this.renderMessagesFromData(msgs);
+        // child_added only downloads each message once — new messages stream in one at a time
+        // limitToLast(50) means we only fetch the most recent 50 on first load
+        const listener = ref.orderByChild('timestamp').limitToLast(50).on('child_added', (snapshot) => {
+            const msg = snapshot.val();
+            if (!msg) return;
+            // Avoid duplicates
+            if (!this._messages.find(m => m.timestamp === msg.timestamp && m.from === msg.from)) {
+                this._messages.push(msg);
+                this._messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            }
+            this.renderMessagesFromData(this._messages);
         });
         this._msgRef = ref;
         this._msgListener = listener;
@@ -366,9 +374,10 @@ class MessagingApp {
 
     detachMessageListener() {
         if (this._msgRef && this._msgListener) {
-            this._msgRef.off('value', this._msgListener);
+            this._msgRef.orderByChild('timestamp').limitToLast(50).off('child_added', this._msgListener);
             this._msgRef = null;
             this._msgListener = null;
+            this._messages = [];
         }
     }
 
@@ -941,43 +950,6 @@ class MessagingApp {
         const text = input.value;
         if (!text.trim() || !this.currentChat) return;
         this.closeEmojiPicker();
-
-        // /evan command — sends a random Evan image as BOT
-        if (text.trim().toLowerCase() === '/evan') {
-            const lastEvan = sessionStorage.getItem('lastEvan');
-            const cooldown = 30 * 1000;
-            if (lastEvan && Date.now() - parseInt(lastEvan) < cooldown) {
-                const remaining = Math.ceil((cooldown - (Date.now() - parseInt(lastEvan))) / 1000);
-                alert('\u23f3 Slow down! You can use /evan again in ' + remaining + ' seconds.');
-                input.value = '';
-                return;
-            }
-            sessionStorage.setItem('lastEvan', Date.now().toString());
-            input.value = '';
-            const num = Math.floor(Math.random() * 8) + 1;
-            const imageUrl = 'https://willvlam.github.io/Messaging-app/evan/' + num + '.png';
-            const botMsg = {
-                type: 'file',
-                filename: 'evan' + num + '.png',
-                downloadURL: imageUrl,
-                isImage: true,
-                from: 'BOT',
-                timestamp: new Date().toISOString()
-            };
-            try {
-                if (this.currentChatType === 'room') {
-                    await this.db.ref('rooms/' + this.currentChat + '/messages').push(botMsg);
-                } else {
-                    const key = this.getConversationKey(this.currentUser.username, this.currentChat);
-                    await this.db.ref('messages/' + key).push(botMsg);
-                    await this.db.ref('userConversations/' + this.currentUser.username + '/' + this.currentChat).set(true);
-                    await this.db.ref('userConversations/' + this.currentChat + '/' + this.currentUser.username).set(true);
-                }
-            } catch (err) {
-                alert('Failed to send: ' + err.message);
-            }
-            return;
-        }
 
         const content = { type: 'text', text };
         if (this.replyingTo) {
