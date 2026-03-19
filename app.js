@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'switch to child_added listener, remove /evan';
+const PATCH_NOTE = 'added patch note feature /patch removed /evan upon many requests and decreaced downloads by making it only show the last 50 messages per chat.';
 
 // =====================
 // Emoji Data
