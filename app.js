@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'added patch note feature /patch removed /evan upon many requests and decreaced downloads by making it only show the last 50 messages per chat.';
+const PATCH_NOTE = 'switch to child_added listener, remove /evan';
 
 // =====================
 // Emoji Data
@@ -826,13 +826,14 @@ class MessagingApp {
     }
 
     formatTime(date) {
+        const tz = 'America/Chicago';
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        if (msgDate.getTime() === today.getTime()) {
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const todayStr = now.toLocaleDateString('en-US', { timeZone: tz });
+        const msgStr = date.toLocaleDateString('en-US', { timeZone: tz });
+        if (todayStr === msgStr) {
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz });
         } else {
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz });
         }
     }
 
