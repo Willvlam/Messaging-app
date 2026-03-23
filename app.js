@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'switch to child_added listener, remove /evan';
+const PATCH_NOTE = 'added security and increased user protection';
 
 // =====================
 // Emoji Data
