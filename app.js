@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'added security and increased user protection';
+const PATCH_NOTE = 'added message deletion, members list, and some UI improvements. Also cleaned up old messages (over 24 hours) to save space. also';
 
 // =====================
 // Emoji Data
@@ -319,28 +319,38 @@ class MessagingApp {
         if (lastCleanup && now - parseInt(lastCleanup) < 60 * 60 * 1000) return;
         sessionStorage.setItem('lastCleanup', now.toString());
         const cutoff = now - (24 * 60 * 60 * 1000);
+        const KEEP = 50;
+
+        // Helper: given a snapshot of messages, delete anything older than 24hrs OR beyond last 50
+        function pruneMessages(snap) {
+            if (!snap.exists()) return;
+            // Build array sorted oldest to newest
+            const entries = [];
+            snap.forEach(child => entries.push({ ref: child.ref, ts: new Date(child.val().timestamp).getTime() }));
+            entries.sort((a, b) => a.ts - b.ts);
+            // Delete if older than 24hrs OR if it falls outside the most recent 50
+            const keepFrom = Math.max(0, entries.length - KEEP);
+            entries.forEach((entry, i) => {
+                if (entry.ts < cutoff || i < keepFrom) entry.ref.remove();
+            });
+        }
+
+        // Clean direct messages
         try {
             const msgsSnap = await this.db.ref('messages').get();
             if (msgsSnap.exists()) {
-                msgsSnap.forEach(convo => {
-                    convo.forEach(msg => {
-                        if (new Date(msg.val().timestamp).getTime() < cutoff) msg.ref.remove();
-                    });
-                });
+                msgsSnap.forEach(convo => pruneMessages(convo));
             }
         } catch (e) { console.log('Cleanup error (messages):', e); }
+
+        // Clean room messages
         try {
-            // Only fetch room names first, then check messages per room
             const roomNamesSnap = await this.db.ref('userRooms/Willvlam').get();
             if (roomNamesSnap.exists()) {
                 const roomNames = Object.keys(roomNamesSnap.val());
                 for (const roomName of roomNames) {
-                    const msgsSnap = await this.db.ref('rooms/' + roomName + '/messages').get();
-                    if (msgsSnap.exists()) {
-                        msgsSnap.forEach(msg => {
-                            if (new Date(msg.val().timestamp).getTime() < cutoff) msg.ref.remove();
-                        });
-                    }
+                    const snap = await this.db.ref('rooms/' + roomName + '/messages').get();
+                    pruneMessages(snap);
                 }
             }
         } catch (e) { console.log('Cleanup error (rooms):', e); }
