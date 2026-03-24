@@ -467,7 +467,7 @@ body {
     position: absolute;
     bottom: 70px;
     left: 15px;
-    width: 320px;
+    width: 340px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 10px;
@@ -476,8 +476,29 @@ body {
     overflow: hidden;
 }
 
-.emoji-tabs { display: flex; background: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 4px; gap: 2px; }
-.emoji-tab { background: none; border: none; font-size: 18px; padding: 5px 7px; cursor: pointer; border-radius: 5px; width: auto; }
+/* Tabs scroll horizontally so all 19 fit */
+.emoji-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 4px;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+.emoji-tabs::-webkit-scrollbar { display: none; }
+
+.emoji-tab {
+    background: none;
+    border: none;
+    font-size: 18px;
+    padding: 5px 6px;
+    cursor: pointer;
+    border-radius: 5px;
+    width: auto;
+    flex-shrink: 0;
+}
 .emoji-tab:hover, .emoji-tab.active { background: #e9ecef; }
 
 .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 8px; max-height: 220px; overflow-y: auto; }
