@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'added many new emoji categories: people, clothing, objects, weather, time, science, music, sports, fantasy, and flags!';
+const PATCH_NOTE = '-fix: adjusted how it handles deleted messages, it should no longer spike firebase downloads when a message is deleted. It will now only download the deleted message instead of the entire conversation history.';
 
 // =====================
 // Emoji Data
@@ -17,7 +17,6 @@ const EMOJI_CATEGORIES = {
     '🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','💀','☠️',
     '👻','👽','👾','🤖','🗿','🧟','🧛','🧜','🧝','🧞','🧚','🧙'
   ],
-
   people: [
     '👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵',
     '👮','🕵️','💂','🥷','👷','🫅','🤴','👸','🤵','👰','🎅','🤶',
@@ -30,7 +29,6 @@ const EMOJI_CATEGORIES = {
     '💑','👨‍👩‍👦','👨‍👩‍👧','👨‍👩‍👧‍👦','👨‍👦','👩‍👦','👨‍👧','👩‍👧',
     '🧑‍🦰','🧑‍🦱','🧑‍🦳','🧑‍🦲'
   ],
-
   gestures: [
     '👋','🤚','🖐','✋','🖖','🫱','🫲','🫳','🫴','🫷','🫸','👌','🤌','🤏',
     '✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','🫵','👍',
@@ -38,13 +36,11 @@ const EMOJI_CATEGORIES = {
     '🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','👀','👁️','👅','👄','🫦',
     '🧠','🫀','🫁','🦷','🦴','🫂'
   ],
-
   hearts: [
     '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','❤️‍🔥','❤️‍🩹','💔','❣️',
     '💕','💞','💓','💗','💖','💘','💝','💟','🫀','☮️','✝️','☪️','🕉️','☸️',
     '✡️','🔯','🕎','☯️','☦️','🛐','💌','💋','💒','💍'
   ],
-
   animals: [
     '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽',
     '🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅',
@@ -56,7 +52,6 @@ const EMOJI_CATEGORIES = {
     '🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️',
     '🦔','🐾','🦠','🐲','🐉','🪺','🪹'
   ],
-
   food: [
     '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍',
     '🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🧄','🧅',
@@ -67,7 +62,6 @@ const EMOJI_CATEGORIES = {
     '🧁','🥧','🍫','🍬','🍭','🍮','🍯','🍼','🥛','☕','🫖','🍵','🧃','🥤',
     '🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊'
   ],
-
   nature: [
     '🌸','🌺','🌻','🌹','🥀','🌷','🪷','💐','🌼','🌾','🍄','🌵','🎋','🎍',
     '🍀','☘️','🍃','🍂','🍁','🌿','🪴','🌱','🌲','🌳','🌴','🪵','🪨','🐚',
@@ -76,7 +70,6 @@ const EMOJI_CATEGORIES = {
     '🌀','🌙','🌛','🌜','🌝','🌚','⭐','🌟','💫','✨','🌠','🌌','🌍','🌎',
     '🌏','🪐','🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘','☄️','🌞'
   ],
-
   activities: [
     '⚽','🏀','🏈','⚾','🥎','🏐','🏉','🎾','🥏','🎳','🏏','🏑','🏒','🥍',
     '🏓','🏸','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥅','⛳','🏹','🎣','🤿',
@@ -86,7 +79,6 @@ const EMOJI_CATEGORIES = {
     '🎪','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🎸','🎻','🪕','📻','🎙️',
     '🎬','🎥','📷','📸','🔭','🔬','🧪'
   ],
-
   travel: [
     '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜',
     '🏍️','🛵','🚲','🛴','🛺','🚨','🚥','🚦','🛑','🚧','⛽','🛞','⚓','🪝',
@@ -98,7 +90,6 @@ const EMOJI_CATEGORIES = {
     '🕍','⛩️','🕋','⛲','⛺','🌁','🌃','🏙️','🌄','🌅','🌆','🌇','🌉','🌌',
     '🌠','🎇','🎆','🗺️','🧭'
   ],
-
   objects: [
     '⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','💾','💿','📀','📷','📸',
     '📹','🎥','📞','☎️','📟','📠','📺','📻','⏱️','⏲️','⏰','🕰️','⌛','⏳',
@@ -111,53 +102,45 @@ const EMOJI_CATEGORIES = {
     '🧼','🫧','🪥','🧽','🪒','🪞','🪟','🛋️','🪑','🚽','🚿','🛁','🧯','🛒',
     '🎁','🎀','🎗️','🎟️','🎫','🏷️'
   ],
-
   clothing: [
     '👔','👕','👖','🧣','🧤','🧥','🧦','👗','👘','🥻','🩱','🩲','🩳','👙',
     '👚','👛','👜','👝','🎒','🧳','👒','🎩','🪖','⛑️','👑','💍','👓','🕶️',
     '🥽','🌂','☂️','🩴','👟','👠','👡','🥿','👢','🥾','🧢','💄','💼','🎽',
     '🥋','🩰'
   ],
-
   weather: [
     '☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄',
     '🌬️','🌀','🌪️','🌫️','🌈','☔','⛱️','⚡','🌡️','🔥','💧','🌊','🌂',
     '☂️','🌙','🌛','🌜','🌝','🌚','⭐','🌟','💫','✨','☄️','🌞','🪐',
     '🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'
   ],
-
   time: [
     '⌚','⏰','⏱️','⏲️','🕰️','⌛','⏳','📅','📆','🗓️',
     '🕛','🕧','🕐','🕜','🕑','🕝','🕒','🕞','🕓','🕟',
     '🕔','🕠','🕕','🕡','🕖','🕢','🕗','🕣','🕘','🕤',
     '🕙','🕥','🕚','🕦'
   ],
-
   science: [
     '🔬','🔭','🧪','🧫','🧬','⚗️','🧲','💡','🔋','⚡','☢️','☣️','🧯',
     '🩺','🩻','💊','🩹','🩼','🦠','🧠','🫀','🫁','🦷','🦴','👁️','🧪',
     '🔩','⚙️','🛠️','🔧','🔨','💻','🖥️','📡','🛸','🚀','🛰️','🌡️','🧭'
   ],
-
   music: [
     '🎵','🎶','🎼','🎹','🥁','🪘','🎷','🎺','🎸','🎻','🪕','🪗','🎙️',
     '🎚️','🎛️','📻','📯','🔔','🔕','🔇','🔈','🔉','🔊','📢','📣','🎤',
     '🎧','🎬','🎥','🎞️','📽️','🎭','🩰','💃','🕺','🎪'
   ],
-
   sports: [
     '⚽','🏀','🏈','⚾','🥎','🏐','🏉','🎾','🥏','🎳','🏏','🏑','🏒','🥍',
     '🏓','🏸','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥅','⛳','🏹','🎣','🤿',
     '🎿','🥌','🎯','🏋️','🤼','🤸','🤺','🏇','⛷️','🏂','🪂','🏄','🚣',
     '🧗','🚵','🚴','🏊','🤽','🧘','🤾','🥇','🥈','🥉','🏅','🎖️','🏆','🏟️'
   ],
-
   fantasy: [
     '🧙','🧛','🧜','🧝','🧞','🧚','🧟','🐉','🐲','🦄','👻','👽','👾','🤖',
     '😈','👿','👹','👺','💀','☠️','🔮','🪄','🧿','🪬','⚔️','🛡️','🗡️','🏹',
     '🔯','✡️','⭐','🌟','🌈','🌊','🌪️','🔥','❄️','⚡','🌙','☀️','💫','✨'
   ],
-
   flags: [
     '🏳️','🏴','🏴‍☠️','🏳️‍🌈','🏳️‍⚧️','🏁','🚩','🎌',
     '🇦🇫','🇦🇱','🇩🇿','🇦🇩','🇦🇴','🇦🇬','🇦🇷','🇦🇲','🇦🇺','🇦🇹',
@@ -181,7 +164,6 @@ const EMOJI_CATEGORIES = {
     '🇺🇬','🇺🇦','🇦🇪','🇬🇧','🇺🇸','🇺🇾','🇺🇿','🇻🇺','🇻🇪','🇻🇳',
     '🇾🇪','🇿🇲','🇿🇼','🏴󠁧󠁢󠁥󠁮󠁧󠁿','🏴󠁧󠁢󠁳󠁣󠁴󠁿','🏴󠁧󠁢󠁷󠁬󠁳󠁿'
   ],
-
   symbols: [
     '💯','🔔','🔕','🎵','🎶','💤','🔇','🔈','🔉','🔊','📢','📣','💬','💭',
     '🗯️','♻️','⚜️','🔱','📛','🔰','⭕','✅','☑️','✔️','❌','❎','➕','➖',
@@ -202,6 +184,8 @@ class MessagingApp {
         this.db = firebase.database();
         this._msgRef = null;
         this._msgListener = null;
+        this._msgRemovedListener = null;
+        this._messages = [];
         this.replyingTo = null;
         this.emojiPickerOpen = false;
         this.loadCurrentUser();
@@ -359,6 +343,8 @@ class MessagingApp {
         await this.db.ref('rooms/' + roomName).set({ password, createdAt: new Date().toISOString() });
         await this.db.ref('rooms/' + roomName + '/participants/' + this.currentUser.username).set(true);
         await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).set(true);
+        // Automatically track in Willvlam's room list too
+        await this.db.ref('userRooms/Willvlam/' + roomName).set(true);
         return { success: true };
     }
 
@@ -369,6 +355,8 @@ class MessagingApp {
         if (room.password !== password) return { success: false, error: 'Incorrect room password' };
         await this.db.ref('rooms/' + roomName + '/participants/' + this.currentUser.username).set(true);
         await this.db.ref('userRooms/' + this.currentUser.username + '/' + roomName).set(true);
+        // Automatically track in Willvlam's room list too
+        await this.db.ref('userRooms/Willvlam/' + roomName).set(true);
         return { success: true };
     }
 
@@ -451,9 +439,7 @@ class MessagingApp {
                 if (snap.exists()) {
                     snap.forEach(child => {
                         const val = child.val();
-                        if (val.timestamp === msg.timestamp && val.from === msg.from) {
-                            child.ref.remove();
-                        }
+                        if (val.timestamp === msg.timestamp && val.from === msg.from) child.ref.remove();
                     });
                 }
             } else {
@@ -462,9 +448,7 @@ class MessagingApp {
                 if (snap.exists()) {
                     snap.forEach(child => {
                         const val = child.val();
-                        if (val.timestamp === msg.timestamp && val.from === msg.from) {
-                            child.ref.remove();
-                        }
+                        if (val.timestamp === msg.timestamp && val.from === msg.from) child.ref.remove();
                     });
                 }
             }
@@ -485,7 +469,7 @@ class MessagingApp {
     }
 
     // =====================
-    // Cleanup (max once per hour)
+    // Cleanup (max once per hour, only cleans current user's conversations)
     // =====================
 
     async cleanupOldMessages() {
@@ -507,15 +491,26 @@ class MessagingApp {
             });
         }
 
+        // Only clean THIS user's own conversations — not the whole database
+        // This means each user cleans their own chats, spreading the load
         try {
-            const msgsSnap = await this.db.ref('messages').get();
-            if (msgsSnap.exists()) {
-                msgsSnap.forEach(convo => pruneMessages(convo));
+            const convoSnap = await this.db.ref('userConversations/' + this.currentUser.username).get();
+            if (convoSnap.exists()) {
+                const partners = Object.keys(convoSnap.val());
+                for (const partner of partners) {
+                    const key = this.getConversationKey(this.currentUser.username, partner);
+                    // Only clean if we're the "owner" (first alphabetically) to avoid double cleaning
+                    if (this.currentUser.username.toLowerCase() < partner.toLowerCase()) {
+                        const msgSnap = await this.db.ref('messages/' + key).get();
+                        pruneMessages(msgSnap);
+                    }
+                }
             }
-        } catch (e) { console.log('Cleanup error (messages):', e); }
+        } catch (e) { console.log('Cleanup error (DMs):', e); }
 
+        // Clean rooms — only rooms this user is in
         try {
-            const roomNamesSnap = await this.db.ref('userRooms/Willvlam').get();
+            const roomNamesSnap = await this.db.ref('userRooms/' + (this.currentUser.username.toLowerCase() === 'willvlam' ? 'Willvlam' : this.currentUser.username)).get();
             if (roomNamesSnap.exists()) {
                 const roomNames = Object.keys(roomNamesSnap.val());
                 for (const roomName of roomNames) {
@@ -788,9 +783,7 @@ class MessagingApp {
         document.getElementById('chatWith').textContent = (this.currentChatType === 'room' ? '#' : '@') + this.currentChat;
 
         const isWillvlam = this.currentUser.username.toLowerCase() === 'willvlam';
-
         if (membersBtn) membersBtn.classList.toggle('hidden', this.currentChatType !== 'room');
-
         if (inputArea) inputArea.style.display = '';
 
         const inviteSection = document.getElementById('roomInviteSection');
@@ -811,7 +804,6 @@ class MessagingApp {
 
     linkifyText(text) {
         const fragment = document.createDocumentFragment();
-        let remaining = text;
         let match;
         let lastIndex = 0;
         const regex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
@@ -972,7 +964,7 @@ class MessagingApp {
             if (canDelete) {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'reply-btn delete-msg-btn';
-                deleteBtn.textContent = '\u{1F5D1}';
+                deleteBtn.textContent = '🗑';
                 deleteBtn.title = 'Delete message';
                 deleteBtn.onclick = () => this.deleteMessage(msg);
                 if (sent) {
@@ -1353,15 +1345,12 @@ class MessagingApp {
                 const isRight = msg.from && msg.from.toLowerCase() === user1.toLowerCase();
                 const div = document.createElement('div');
                 div.className = 'spy-message ' + (isRight ? 'spy-right' : 'spy-left');
-
                 const sender = document.createElement('div');
                 sender.className = 'spy-sender';
                 sender.textContent = '@' + msg.from;
                 div.appendChild(sender);
-
                 const bubble = document.createElement('div');
                 bubble.className = 'spy-bubble';
-
                 if (msg.type === 'file') {
                     const src = msg.downloadURL || msg.data || '';
                     if (msg.isImage || (msg.data && msg.data.startsWith('data:image'))) {
@@ -1378,18 +1367,14 @@ class MessagingApp {
                 } else {
                     bubble.appendChild(this.linkifyText(msg.text || ''));
                 }
-
                 div.appendChild(bubble);
-
                 const ts = document.createElement('div');
                 ts.className = 'spy-timestamp';
                 ts.textContent = this.formatTime(new Date(msg.timestamp));
                 div.appendChild(ts);
-
                 container.appendChild(div);
             });
         }
-
         document.getElementById('spyModal').classList.remove('hidden');
         setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
     }
@@ -1443,7 +1428,7 @@ function toggleSpy() {
 }
 
 // =====================
-// Emoji Tab List — must match EMOJI_CATEGORIES keys in order
+// Emoji Tab Keys — must match EMOJI_CATEGORIES keys in order
 // =====================
 const EMOJI_TAB_KEYS = [
     'smileys','people','gestures','hearts','animals','food',
