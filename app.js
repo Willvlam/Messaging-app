@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = '-fix: adjusted how it handles deleted messages, it should no longer spike firebase downloads when a message is deleted. It will now only download the deleted message instead of the entire conversation history.';
+const PATCH_NOTE = 'fix cleanup downloads, expand emojis';
 
 // =====================
 // Emoji Data
@@ -434,23 +434,16 @@ class MessagingApp {
     async deleteMessage(msg) {
         if (!confirm('Delete this message?')) return;
         try {
-            if (this.currentChatType === 'room') {
-                const snap = await this.db.ref('rooms/' + this.currentChat + '/messages').get();
-                if (snap.exists()) {
-                    snap.forEach(child => {
-                        const val = child.val();
-                        if (val.timestamp === msg.timestamp && val.from === msg.from) child.ref.remove();
-                    });
+            // Use the stored _key to delete directly — no download needed at all
+            if (msg._key) {
+                let ref;
+                if (this.currentChatType === 'room') {
+                    ref = this.db.ref('rooms/' + this.currentChat + '/messages/' + msg._key);
+                } else {
+                    const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                    ref = this.db.ref('messages/' + key + '/' + msg._key);
                 }
-            } else {
-                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
-                const snap = await this.db.ref('messages/' + key).get();
-                if (snap.exists()) {
-                    snap.forEach(child => {
-                        const val = child.val();
-                        if (val.timestamp === msg.timestamp && val.from === msg.from) child.ref.remove();
-                    });
-                }
+                await ref.remove();
             }
         } catch (err) {
             alert('Failed to delete: ' + err.message);
@@ -475,50 +468,38 @@ class MessagingApp {
     async cleanupOldMessages() {
         const lastCleanup = sessionStorage.getItem('lastCleanup');
         const now = Date.now();
-        if (lastCleanup && now - parseInt(lastCleanup) < 60 * 60 * 1000) return;
+        if (lastCleanup && now - parseInt(lastCleanup) < 24 * 60 * 60 * 1000) return; // once per day
         sessionStorage.setItem('lastCleanup', now.toString());
-        const cutoff = now - (24 * 60 * 60 * 1000);
         const KEEP = 50;
 
-        function pruneMessages(snap) {
-            if (!snap.exists()) return;
-            const entries = [];
-            snap.forEach(child => entries.push({ ref: child.ref, ts: new Date(child.val().timestamp).getTime() }));
-            entries.sort((a, b) => a.ts - b.ts);
-            const keepFrom = Math.max(0, entries.length - KEEP);
-            entries.forEach((entry, i) => {
-                if (entry.ts < cutoff || i < keepFrom) entry.ref.remove();
-            });
+        // Prune: only delete messages beyond the last 50 — no age cutoff since storage is tiny
+        // Uses limitToFirst to get only the OLDEST messages (the ones to delete), not all of them
+        async function pruneRef(ref) {
+            // Count total messages first — tiny download, just keys
+            const countSnap = await ref.orderByKey().get();
+            if (!countSnap.exists()) return;
+            const total = Object.keys(countSnap.val()).length;
+            if (total <= KEEP) return; // nothing to delete
+            // Only fetch the ones we need to delete (oldest ones)
+            const deleteCount = total - KEEP;
+            const oldestSnap = await ref.orderByChild('timestamp').limitToFirst(deleteCount).get();
+            if (oldestSnap.exists()) {
+                oldestSnap.forEach(child => child.ref.remove());
+            }
         }
 
-        // Only clean THIS user's own conversations — not the whole database
-        // This means each user cleans their own chats, spreading the load
+        // Only clean the CURRENT active conversation — not everything at once
+        // This spreads cleanup naturally as people use the app
         try {
-            const convoSnap = await this.db.ref('userConversations/' + this.currentUser.username).get();
-            if (convoSnap.exists()) {
-                const partners = Object.keys(convoSnap.val());
-                for (const partner of partners) {
-                    const key = this.getConversationKey(this.currentUser.username, partner);
-                    // Only clean if we're the "owner" (first alphabetically) to avoid double cleaning
-                    if (this.currentUser.username.toLowerCase() < partner.toLowerCase()) {
-                        const msgSnap = await this.db.ref('messages/' + key).get();
-                        pruneMessages(msgSnap);
-                    }
+            if (this.currentChat) {
+                if (this.currentChatType === 'room') {
+                    await pruneRef(this.db.ref('rooms/' + this.currentChat + '/messages'));
+                } else {
+                    const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                    await pruneRef(this.db.ref('messages/' + key));
                 }
             }
-        } catch (e) { console.log('Cleanup error (DMs):', e); }
-
-        // Clean rooms — only rooms this user is in
-        try {
-            const roomNamesSnap = await this.db.ref('userRooms/' + (this.currentUser.username.toLowerCase() === 'willvlam' ? 'Willvlam' : this.currentUser.username)).get();
-            if (roomNamesSnap.exists()) {
-                const roomNames = Object.keys(roomNamesSnap.val());
-                for (const roomName of roomNames) {
-                    const snap = await this.db.ref('rooms/' + roomName + '/messages').get();
-                    pruneMessages(snap);
-                }
-            }
-        } catch (e) { console.log('Cleanup error (rooms):', e); }
+        } catch (e) { console.log('Cleanup error:', e); }
     }
 
     // =====================
