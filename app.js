@@ -209,8 +209,8 @@ class MessagingApp {
         if (username.length < 3) return { success: false, error: 'Username must be at least 3 characters' };
         if (password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
         if (/[.#$\[\]]/.test(username)) return { success: false, error: 'Username cannot contain . # $ [ or ] characters' };
-        const snapshot = await this.db.ref('users/' + username).get();
-        if (snapshot.exists()) return { success: false, error: 'Username already exists' };
+        const existingUsername = await this.resolveUsername(username);
+        if (existingUsername) return { success: false, error: 'Username already exists' };
         await this.db.ref('users/' + username).set({ username, password, createdAt: new Date().toISOString() });
         this.currentUser = { username };
         this.saveCurrentUser();
@@ -219,11 +219,12 @@ class MessagingApp {
 
     async login(username, password) {
         if (/[.#$\[\]]/.test(username)) return { success: false, error: 'Username cannot contain . # $ [ or ] characters' };
-        const snapshot = await this.db.ref('users/' + username).get();
-        if (!snapshot.exists()) return { success: false, error: 'User not found' };
+        const storedUsername = await this.resolveUsername(username);
+        if (!storedUsername) return { success: false, error: 'User not found' };
+        const snapshot = await this.db.ref('users/' + storedUsername).get();
         const user = snapshot.val();
         if (user.password !== password) return { success: false, error: 'Incorrect password' };
-        this.currentUser = { username };
+        this.currentUser = { username: storedUsername };
         this.saveCurrentUser();
         return { success: true };
     }
