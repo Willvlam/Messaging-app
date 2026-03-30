@@ -1115,6 +1115,23 @@ class MessagingApp {
         return muteData;
     }
 
+    async resolveUsername(username) {
+        if (!username) return null;
+        const cleanName = username.replace(/^@/, '');
+        const exactSnap = await this.db.ref('users/' + cleanName).get();
+        if (exactSnap.exists()) return cleanName;
+        const usersSnap = await this.db.ref('users').get();
+        if (!usersSnap.exists()) return null;
+        const users = usersSnap.val();
+        const lowerTarget = cleanName.toLowerCase();
+        for (const storedName of Object.keys(users)) {
+            if (storedName.toLowerCase() === lowerTarget) {
+                return storedName;
+            }
+        }
+        return null;
+    }
+
     async updateMuteUI() {
         const input = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
@@ -1139,24 +1156,18 @@ class MessagingApp {
     async handleSendMessage() {
         const input = document.getElementById('messageInput');
         const text = input.value;
-        if (!text.trim() || !this.currentChat) return;
+        if (!text.trim()) return;
         this.closeEmojiPicker();
 
-        const muteInfo = await this.getMuteInfo(this.currentUser.username);
-        if (muteInfo) {
-            alert('Sorry you cannot chat right now you are muted');
-            await this.updateMuteUI();
-            return;
-        }
-
         const trimmed = text.trim();
-        const muteMatch = trimmed.match(/^\/mute\s+([^\s-]+)-(\d+)([smhd])?$/i);
+        const muteMatch = trimmed.match(/^\/mute\s+@?([^\s-]+)\s*-\s*(\d+)([smhd])?$/i);
         if (muteMatch) {
             if (!this.isModerator()) {
                 alert('Only moderators can mute users');
                 return;
             }
-            const target = muteMatch[1];
+            const targetRaw = muteMatch[1];
+            const target = await this.resolveUsername(targetRaw);
             const amount = parseInt(muteMatch[2], 10);
             const unit = (muteMatch[3] || 'm').toLowerCase();
             const units = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
@@ -1165,13 +1176,12 @@ class MessagingApp {
                 alert('Invalid mute duration. Use a number followed by optional s/m/h/d.');
                 return;
             }
-            if (target.toLowerCase() === this.currentUser.username.toLowerCase()) {
-                alert('You cannot mute yourself');
+            if (!target) {
+                alert('User not found: ' + targetRaw);
                 return;
             }
-            const targetSnap = await this.db.ref('users/' + target).get();
-            if (!targetSnap.exists()) {
-                alert('User not found: ' + target);
+            if (target.toLowerCase() === this.currentUser.username.toLowerCase()) {
+                alert('You cannot mute yourself');
                 return;
             }
             const until = Date.now() + durationMs;
@@ -1183,6 +1193,15 @@ class MessagingApp {
             if (amount !== 1) unitLabel += 's';
             alert('@' + target + ' has been muted for ' + amount + ' ' + unitLabel + '.');
             input.value = '';
+            return;
+        }
+
+        if (!this.currentChat) return;
+
+        const muteInfo = await this.getMuteInfo(this.currentUser.username);
+        if (muteInfo) {
+            alert('Sorry you cannot chat right now you are muted');
+            await this.updateMuteUI();
             return;
         }
 
