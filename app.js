@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'fix cleanup downloads, expand emojis';
+const PATCH_NOTE = 'added admin commands, fixed some bugs, and made various performance improvements';
 
 // =====================
 // Emoji Data
@@ -777,6 +777,7 @@ class MessagingApp {
         } else if (inviteSection) {
             inviteSection.classList.add('hidden');
         }
+        await this.updateMuteUI();
     }
 
     // =====================
@@ -1096,13 +1097,96 @@ class MessagingApp {
         }
     }
 
+    isModerator() {
+        return ['willvlam', 'ornate_fire05'].includes(this.currentUser.username.toLowerCase());
+    }
+
+    async getMuteInfo(username) {
+        if (!username) return null;
+        const snapshot = await this.db.ref('mutes/' + username).get();
+        if (!snapshot.exists()) return null;
+        const muteData = snapshot.val();
+        if (!muteData || !muteData.until) return null;
+        const now = Date.now();
+        if (now > muteData.until) {
+            await this.db.ref('mutes/' + username).remove();
+            return null;
+        }
+        return muteData;
+    }
+
+    async updateMuteUI() {
+        const input = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const fileBtn = document.getElementById('sendFileBtn');
+        const emojiBtn = document.getElementById('emojiBtn');
+        const muted = await this.getMuteInfo(this.currentUser.username);
+        const disabled = !!muted;
+        if (input) {
+            input.disabled = disabled;
+            if (disabled) {
+                input.value = '';
+                input.placeholder = 'Sorry you cannot chat right now you are muted';
+            } else {
+                input.placeholder = 'Type a message...';
+            }
+        }
+        if (sendBtn) sendBtn.disabled = disabled;
+        if (fileBtn) fileBtn.disabled = disabled;
+        if (emojiBtn) emojiBtn.disabled = disabled;
+    }
+
     async handleSendMessage() {
         const input = document.getElementById('messageInput');
         const text = input.value;
         if (!text.trim() || !this.currentChat) return;
         this.closeEmojiPicker();
 
-        if (text.trim().toLowerCase() === '/patch') {
+        const muteInfo = await this.getMuteInfo(this.currentUser.username);
+        if (muteInfo) {
+            alert('Sorry you cannot chat right now you are muted');
+            await this.updateMuteUI();
+            return;
+        }
+
+        const trimmed = text.trim();
+        const muteMatch = trimmed.match(/^\/mute\s+([^\s-]+)-(\d+)([smhd])?$/i);
+        if (muteMatch) {
+            if (!this.isModerator()) {
+                alert('Only moderators can mute users');
+                return;
+            }
+            const target = muteMatch[1];
+            const amount = parseInt(muteMatch[2], 10);
+            const unit = (muteMatch[3] || 'm').toLowerCase();
+            const units = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
+            const durationMs = amount > 0 && units[unit] ? amount * units[unit] : null;
+            if (!durationMs) {
+                alert('Invalid mute duration. Use a number followed by optional s/m/h/d.');
+                return;
+            }
+            if (target.toLowerCase() === this.currentUser.username.toLowerCase()) {
+                alert('You cannot mute yourself');
+                return;
+            }
+            const targetSnap = await this.db.ref('users/' + target).get();
+            if (!targetSnap.exists()) {
+                alert('User not found: ' + target);
+                return;
+            }
+            const until = Date.now() + durationMs;
+            await this.db.ref('mutes/' + target).set({ until, mutedBy: this.currentUser.username });
+            let unitLabel = 'minute';
+            if (unit === 's') unitLabel = 'second';
+            else if (unit === 'h') unitLabel = 'hour';
+            else if (unit === 'd') unitLabel = 'day';
+            if (amount !== 1) unitLabel += 's';
+            alert('@' + target + ' has been muted for ' + amount + ' ' + unitLabel + '.');
+            input.value = '';
+            return;
+        }
+
+        if (trimmed.toLowerCase() === '/patch') {
             input.value = PATCH_NOTE;
             input.select();
             return;
