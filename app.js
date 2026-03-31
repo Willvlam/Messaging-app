@@ -1081,19 +1081,19 @@ class MessagingApp {
     // =====================
 
     initializeEventListeners() {
-        document.getElementById('loginBtn').addEventListener('click', () => this.handleLogin());
-        document.getElementById('signupBtn').addEventListener('click', () => this.handleSignup());
-        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
-        document.getElementById('sendBtn').addEventListener('click', () => this.handleSendMessage());
-        document.getElementById('sendFileBtn').addEventListener('click', () => this.handleSendFile());
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+        document.getElementById('loginBtn')?.addEventListener('click', () => this.handleLogin());
+        document.getElementById('signupBtn')?.addEventListener('click', () => this.handleSignup());
+        document.getElementById('logoutBtn')?.addEventListener('click', () => this.logout());
+        document.getElementById('sendBtn')?.addEventListener('click', () => this.handleSendMessage());
+        document.getElementById('sendFileBtn')?.addEventListener('click', () => this.handleSendFile());
+        document.getElementById('messageInput')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleSendMessage();
         });
-        document.getElementById('startChatBtn').addEventListener('click', () => this.handleStartChat());
-        document.getElementById('chatNameInput').addEventListener('keypress', (e) => {
+        document.getElementById('startChatBtn')?.addEventListener('click', () => this.handleStartChat());
+        document.getElementById('chatNameInput')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleStartChat();
         });
-        document.getElementById('chatTypeSelect').addEventListener('change', (e) => {
+        document.getElementById('chatTypeSelect')?.addEventListener('change', (e) => {
             const pwInput = document.getElementById('chatPasswordInput');
             const helper = document.getElementById('roomHelperText');
             const startBtn = document.getElementById('startChatBtn');
@@ -1106,18 +1106,18 @@ class MessagingApp {
                 pwInput.classList.add('hidden'); pwInput.value = ''; helper.classList.add('hidden'); startBtn.textContent = 'Open Chat';
             }
         });
-        document.getElementById('addFriendBtn').addEventListener('click', () => {
+        document.getElementById('addFriendBtn')?.addEventListener('click', () => {
             this.handleAddFriend(document.getElementById('addFriendInput').value.trim());
         });
-        document.getElementById('addFriendInput').addEventListener('keypress', (e) => {
+        document.getElementById('addFriendInput')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleAddFriend(document.getElementById('addFriendInput').value.trim());
         });
-        document.getElementById('inviteFriendBtn').addEventListener('click', () => this.handleInviteFriend());
-        document.getElementById('membersBtn').addEventListener('click', () => this.showMembersModal());
-        document.getElementById('miniGameBtn').addEventListener('click', () => this.toggleMiniGamePanel());
-        document.getElementById('exportQrBtn').addEventListener('click', () => this.showQrExportModal());
-        document.getElementById('importQrBtn').addEventListener('click', () => this.showQrImportModal());
-        document.getElementById('downloadQrBtn').addEventListener('click', () => {
+        document.getElementById('inviteFriendBtn')?.addEventListener('click', () => this.handleInviteFriend());
+        document.getElementById('membersBtn')?.addEventListener('click', () => this.showMembersModal());
+        document.getElementById('miniGameBtn')?.addEventListener('click', () => this.toggleMiniGamePanel());
+        document.getElementById('exportQrBtn')?.addEventListener('click', () => this.showQrExportModal());
+        document.getElementById('importQrBtn')?.addEventListener('click', () => this.showQrImportModal());
+        document.getElementById('downloadQrBtn')?.addEventListener('click', () => {
             const canvas = document.querySelector('#qrCodeContainer canvas');
             if (canvas) {
                 const a = document.createElement('a');
@@ -1126,16 +1126,16 @@ class MessagingApp {
                 a.click();
             }
         });
-        document.getElementById('stopScanBtn').addEventListener('click', () => this.stopScanner());
-        document.getElementById('helpBtn').addEventListener('click', () => this.showHelpModal());
+        document.getElementById('stopScanBtn')?.addEventListener('click', () => this.stopScanner());
+        document.getElementById('helpBtn')?.addEventListener('click', () => this.showHelpModal());
         const spyBtn = document.getElementById('spyBtn');
         if (spyBtn) spyBtn.addEventListener('click', () => this.handleSpyView());
         const spyUser2 = document.getElementById('spyUser2');
         if (spyUser2) spyUser2.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleSpyView();
         });
-        document.getElementById('submitFeedbackBtn').addEventListener('click', () => this.submitFeedback());
-        document.getElementById('emojiBtn').addEventListener('click', (e) => {
+        document.getElementById('submitFeedbackBtn')?.addEventListener('click', () => this.submitFeedback());
+        document.getElementById('emojiBtn')?.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleEmojiPicker();
         });
