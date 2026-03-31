@@ -1012,6 +1012,7 @@ class MessagingApp {
                 } else if (isAudio) {
                     const audio = document.createElement('audio');
                     audio.controls = true;
+                    audio.preload = 'metadata';
                     audio.src = src;
                     audio.style.cssText = 'width:100%;margin-top:6px;';
                     bubble.appendChild(audio);
@@ -1029,6 +1030,7 @@ class MessagingApp {
             } else if (msg.type === 'audio') {
                 const audio = document.createElement('audio');
                 audio.controls = true;
+                audio.preload = 'metadata';
                 audio.src = msg.data || msg.downloadURL || '';
                 audio.style.cssText = 'width:100%;margin-top:6px;';
                 bubble.appendChild(audio);
@@ -1273,6 +1275,30 @@ class MessagingApp {
         if (recordBtn) recordBtn.disabled = disabled;
     }
 
+    getPreferredAudioMimeType() {
+        if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+            return '';
+        }
+        const preferredTypes = [
+            'audio/webm;codecs=opus',
+            'audio/ogg;codecs=opus',
+            'audio/mp4',
+            'audio/mpeg',
+            'audio/webm',
+            'audio/wav'
+        ];
+        for (const type of preferredTypes) {
+            try {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    return type;
+                }
+            } catch (err) {
+                continue;
+            }
+        }
+        return '';
+    }
+
     async handleRecordAudio() {
         if (!this.currentChat) {
             alert('Open a chat first to record audio');
@@ -1295,14 +1321,24 @@ class MessagingApp {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.audioStream = stream;
             this.recordingChunks = [];
-            this.mediaRecorder = new MediaRecorder(stream);
+            let recorderOptions = {};
+            const preferredMimeType = this.getPreferredAudioMimeType();
+            if (preferredMimeType) {
+                recorderOptions.mimeType = preferredMimeType;
+            }
+            this.mediaRecorder = Object.keys(recorderOptions).length > 0
+                ? new MediaRecorder(stream, recorderOptions)
+                : new MediaRecorder(stream);
             this.mediaRecorder.ondataavailable = (event) => {
                 if (event.data && event.data.size > 0) {
                     this.recordingChunks.push(event.data);
                 }
             };
             this.mediaRecorder.onstop = async () => {
-                const blob = new Blob(this.recordingChunks, { type: 'audio/webm' });
+                const blobType = this.mediaRecorder?.mimeType || (this.recordingChunks[0] && this.recordingChunks[0].type);
+                const blob = blobType
+                    ? new Blob(this.recordingChunks, { type: blobType })
+                    : new Blob(this.recordingChunks);
                 await this.sendAudioBlob(blob);
                 this.resetAudioRecordingUI();
             };
@@ -1359,7 +1395,7 @@ class MessagingApp {
             return;
         }
         const dataUrl = await this.readBlobAsDataURL(blob);
-        const extension = blob.type.split('/')[1] || 'webm';
+        const extension = (blob.type.split(';')[0].split('/')[1] || 'webm').replace(/[\s]+/g, '');
         const filename = 'voice-message.' + extension;
         const content = {
             type: 'audio',
