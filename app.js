@@ -1315,6 +1315,11 @@ class MessagingApp {
         description.textContent = 'Choose a solo challenge or invite a friend for a 1v1 match.';
         panel.appendChild(description);
 
+        const scrollHint = document.createElement('div');
+        scrollHint.className = 'mini-game-description';
+        scrollHint.textContent = 'Scroll inside this panel to see multiplayer challenges, invites, and active matches.';
+        panel.appendChild(scrollHint);
+
         const content = document.createElement('div');
         content.className = 'mini-game-content';
         panel.appendChild(content);
@@ -1331,6 +1336,24 @@ class MessagingApp {
         const allGames = await this.getGamesForCurrentUser();
         const pendingInvites = allGames.filter(g => g.status === 'pending' && g.opponent === this.currentUser.username);
         const activeGames = allGames.filter(g => g.status === 'active' || g.status === 'complete');
+
+        const multiplayerSection = document.createElement('div');
+        multiplayerSection.className = 'mini-game-section';
+        multiplayerSection.innerHTML = '<div class="mini-game-section-title">Multiplayer Games</div>';
+        const multiplayerGrid = document.createElement('div');
+        multiplayerGrid.className = 'game-grid';
+        MINI_GAMES.filter(game => game.mode === 'pvp').forEach((game) => {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.innerHTML = `
+                <div class="game-card-title">${game.title}</div>
+                <div class="game-card-desc">${game.description}</div>
+                <small>1v1 challenge · goal ${game.goal || 'variable'}</small>
+            `;
+            multiplayerGrid.appendChild(card);
+        });
+        multiplayerSection.appendChild(multiplayerGrid);
+        content.appendChild(multiplayerSection);
 
         const soloSection = document.createElement('div');
         soloSection.className = 'mini-game-section';
