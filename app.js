@@ -1,7 +1,16 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'added game mode and fixed some bugs';
+
+const PATCH_NOTE = 'MULTIPLAYER MINIGAMES!!!';
+const MINI_GAMES = [
+  { id: 'quick-tap', title: 'Quick Tap', description: 'Tap fast to reach 20 points.', mode: 'solo', goal: 20 },
+  { id: 'guess-number', title: 'Guess Number', description: 'Guess a number between 1 and 10 and beat the computer.', mode: 'solo' },
+  { id: 'memory-match', title: 'Memory Match', description: 'Match pairs by remembering cards.', mode: 'solo' },
+  { id: 'tap-race', title: 'Tap Race', description: '1v1: fastest to 25 taps wins.', mode: 'pvp', goal: 25 },
+  { id: 'number-duel', title: 'Number Duel', description: '1v1: roll higher than your opponent to score.', mode: 'pvp', goal: 50 },
+  { id: 'trivia-faceoff', title: 'Trivia Faceoff', description: '1v1: answer simple questions to score points.', mode: 'pvp', goal: 10 }
+];
 
 // Safari / WebKit compatibility shim for media fullscreen APIs
 if (typeof HTMLMediaElement !== 'undefined') {
@@ -1251,61 +1260,608 @@ class MessagingApp {
         if (emojiBtn) emojiBtn.disabled = disabled;
     }
 
-    toggleMiniGamePanel() {
+    async toggleMiniGamePanel() {
         const existing = document.getElementById('miniGamePanel');
         if (existing) {
+            if (existing._gameRef && existing._gameCallback) {
+                existing._gameRef.off('value', existing._gameCallback);
+            }
             existing.remove();
             return;
         }
 
-        let score = 0;
         const panel = document.createElement('div');
         panel.id = 'miniGamePanel';
         panel.className = 'mini-game-panel';
 
+        const headerRow = document.createElement('div');
+        headerRow.style.display = 'flex';
+        headerRow.style.alignItems = 'center';
+        headerRow.style.justifyContent = 'space-between';
+        headerRow.style.gap = '12px';
+
         const header = document.createElement('div');
         header.className = 'mini-game-header';
-        header.textContent = 'Mini Game';
-
-        const description = document.createElement('div');
-        description.className = 'mini-game-description';
-        description.textContent = 'Click the button 10 times to win.';
-
-        const scoreText = document.createElement('div');
-        scoreText.className = 'mini-game-score';
-        scoreText.textContent = 'Score: 0 / 10';
-
-        const actionBtn = document.createElement('button');
-        actionBtn.className = 'mini-game-button';
-        actionBtn.textContent = 'Tap me!';
-
-        const resultText = document.createElement('div');
-        resultText.className = 'mini-game-result';
+        header.textContent = 'Mini Games';
 
         const closeBtn = document.createElement('button');
         closeBtn.className = 'mini-game-close-btn';
         closeBtn.textContent = 'Close';
+        closeBtn.onclick = () => {
+            if (panel._gameRef && panel._gameCallback) {
+                panel._gameRef.off('value', panel._gameCallback);
+            }
+            panel.remove();
+        };
 
-        actionBtn.onclick = () => {
-            if (score >= 10) return;
-            score += 1;
-            scoreText.textContent = 'Score: ' + score + ' / 10';
-            if (score === 10) {
-                resultText.textContent = '🎉 You won! Great job.';
-                actionBtn.textContent = 'Done';
-                actionBtn.disabled = true;
+        headerRow.appendChild(header);
+        headerRow.appendChild(closeBtn);
+        panel.appendChild(headerRow);
+
+        const description = document.createElement('div');
+        description.className = 'mini-game-description';
+        description.textContent = 'Choose a solo challenge or invite a friend for a 1v1 match.';
+        panel.appendChild(description);
+
+        const content = document.createElement('div');
+        content.className = 'mini-game-content';
+        panel.appendChild(content);
+        document.body.appendChild(panel);
+
+        if (!this.currentUser) {
+            const loginText = document.createElement('div');
+            loginText.className = 'mini-game-description';
+            loginText.textContent = 'Log in to play games and challenge friends.';
+            content.appendChild(loginText);
+            return;
+        }
+
+        const friends = await this.getFriendList();
+        const allGames = await this.getGamesForCurrentUser();
+        const pendingInvites = allGames.filter(g => g.status === 'pending' && g.opponent === this.currentUser.username);
+        const activeGames = allGames.filter(g => g.status === 'active' || g.status === 'complete');
+
+        const soloSection = document.createElement('div');
+        soloSection.className = 'mini-game-section';
+        soloSection.innerHTML = '<div class="mini-game-section-title">Solo Games</div>';
+        const soloGrid = document.createElement('div');
+        soloGrid.className = 'game-grid';
+        MINI_GAMES.filter(game => game.mode === 'solo').forEach((game) => {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.innerHTML = `
+                <div class="game-card-title">${game.title}</div>
+                <div class="game-card-desc">${game.description}</div>
+            `;
+            const playBtn = document.createElement('button');
+            playBtn.className = 'mini-game-button';
+            playBtn.textContent = 'Play Solo';
+            playBtn.onclick = () => this.openSoloGame(panel, game);
+            card.appendChild(playBtn);
+            soloGrid.appendChild(card);
+        });
+        soloSection.appendChild(soloGrid);
+        content.appendChild(soloSection);
+
+        const challengeSection = document.createElement('div');
+        challengeSection.className = 'mini-game-section';
+        challengeSection.innerHTML = '<div class="mini-game-section-title">1v1 Challenges</div>';
+        const challengeForm = document.createElement('div');
+        challengeForm.className = 'mini-game-form';
+
+        const friendSelect = document.createElement('select');
+        friendSelect.className = 'mini-game-input';
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = '-- choose a friend --';
+        friendSelect.appendChild(emptyOption);
+        friends.forEach(friend => {
+            const option = document.createElement('option');
+            option.value = friend;
+            option.textContent = friend;
+            friendSelect.appendChild(option);
+        });
+
+        const gameSelect = document.createElement('select');
+        gameSelect.className = 'mini-game-input';
+        MINI_GAMES.filter(game => game.mode === 'pvp').forEach(game => {
+            const option = document.createElement('option');
+            option.value = game.id;
+            option.textContent = game.title;
+            gameSelect.appendChild(option);
+        });
+
+        const createStatus = document.createElement('div');
+        createStatus.className = 'mini-game-status';
+        createStatus.textContent = friends.length ? 'Pick a friend and a game to challenge.' : 'Add friends to challenge them in 1v1 games.';
+
+        const challengeBtn = document.createElement('button');
+        challengeBtn.className = 'mini-game-button';
+        challengeBtn.textContent = 'Challenge Friend';
+        challengeBtn.onclick = async () => {
+            const friend = friendSelect.value;
+            const gameType = gameSelect.value;
+            if (!friend) {
+                createStatus.textContent = 'Select a friend to challenge.';
+                return;
+            }
+            try {
+                await this.createGameChallenge(gameType, friend);
+                createStatus.textContent = 'Challenge sent to @' + friend + '!';
+                this.toggleMiniGamePanel();
+            } catch (err) {
+                createStatus.textContent = 'Unable to send challenge: ' + err.message;
             }
         };
-        closeBtn.onclick = () => panel.remove();
 
-        panel.appendChild(header);
+        challengeForm.appendChild(friendSelect);
+        challengeForm.appendChild(gameSelect);
+        challengeForm.appendChild(challengeBtn);
+        challengeForm.appendChild(createStatus);
+        challengeSection.appendChild(challengeForm);
+        content.appendChild(challengeSection);
+
+        const invitationsSection = document.createElement('div');
+        invitationsSection.className = 'mini-game-section';
+        invitationsSection.innerHTML = '<div class="mini-game-section-title">Pending Invites</div>';
+        const invitesList = document.createElement('div');
+        invitesList.className = 'game-grid';
+
+        if (pendingInvites.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'game-card';
+            empty.textContent = 'No pending invitations.';
+            invitesList.appendChild(empty);
+        } else {
+            pendingInvites.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.innerHTML = `
+                    <div class="game-card-title">${this.getGameTemplate(game.type).title}</div>
+                    <div class="game-card-desc">Invited by @${game.host}</div>
+                    <small>${this.getGameTemplate(game.type).description}</small>
+                `;
+                const acceptBtn = document.createElement('button');
+                acceptBtn.className = 'mini-game-button';
+                acceptBtn.textContent = 'Accept';
+                acceptBtn.onclick = async () => {
+                    try {
+                        await this.acceptGameChallenge(game.id);
+                        this.openGameSession(panel, game.id);
+                    } catch (err) {
+                        alert('Unable to accept challenge: ' + err.message);
+                    }
+                };
+                card.appendChild(acceptBtn);
+                invitesList.appendChild(card);
+            });
+        }
+
+        invitationsSection.appendChild(invitesList);
+        content.appendChild(invitationsSection);
+
+        const activeSection = document.createElement('div');
+        activeSection.className = 'mini-game-section';
+        activeSection.innerHTML = '<div class="mini-game-section-title">My Games</div>';
+        const activeList = document.createElement('div');
+        activeList.className = 'game-grid';
+
+        if (activeGames.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'game-card';
+            empty.textContent = 'No active games yet. Challenge a friend to start one.';
+            activeList.appendChild(empty);
+        } else {
+            activeGames.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                const statusText = game.status === 'complete' ? 'Finished' : game.status === 'active' ? 'In progress' : 'Pending';
+                card.innerHTML = `
+                    <div class="game-card-title">${this.getGameTemplate(game.type).title}</div>
+                    <div class="game-card-desc">${statusText} — ${game.host} vs ${game.opponent}</div>
+                    <small>Score: ${game.hostScore || 0} – ${game.opponentScore || 0}</small>
+                `;
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'mini-game-button';
+                viewBtn.textContent = game.status === 'complete' ? 'View Result' : 'View Game';
+                viewBtn.onclick = () => this.openGameSession(panel, game.id);
+                card.appendChild(viewBtn);
+                activeList.appendChild(card);
+            });
+        }
+        activeSection.appendChild(activeList);
+        content.appendChild(activeSection);
+    }
+
+    async getFriendList() {
+        if (!this.currentUser) return [];
+        const snapshot = await this.db.ref('friends/' + this.currentUser.username).get();
+        if (!snapshot.exists()) return [];
+        return Object.keys(snapshot.val()).sort((a, b) => a.localeCompare(b));
+    }
+
+    async getGamesForCurrentUser() {
+        if (!this.currentUser) return [];
+        const snapshot = await this.db.ref('games').get();
+        if (!snapshot.exists()) return [];
+        return Object.entries(snapshot.val())
+            .map(([id, item]) => ({ id, ...item }))
+            .filter(game => game.host === this.currentUser.username || game.opponent === this.currentUser.username);
+    }
+
+    getGameTemplate(type) {
+        return MINI_GAMES.find(game => game.id === type) || { title: type, description: 'Unknown game', mode: 'pvp', goal: 20 };
+    }
+
+    async createGameChallenge(gameType, opponent) {
+        if (!this.currentUser) throw new Error('Login required');
+        if (!opponent) throw new Error('Pick a friend');
+        if (opponent === this.currentUser.username) throw new Error('Cannot challenge yourself');
+
+        const template = this.getGameTemplate(gameType);
+        const newGameRef = this.db.ref('games').push();
+        const gameId = newGameRef.key;
+        await newGameRef.set({
+            type: gameType,
+            status: 'pending',
+            host: this.currentUser.username,
+            opponent,
+            hostScore: 0,
+            opponentScore: 0,
+            goal: template.goal || 20,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastAction: 'Waiting for opponent to accept',
+            result: ''
+        });
+        return gameId;
+    }
+
+    async acceptGameChallenge(gameId) {
+        if (!this.currentUser) throw new Error('Login required');
+        const ref = this.db.ref('games/' + gameId);
+        const snapshot = await ref.get();
+        if (!snapshot.exists()) throw new Error('Challenge not found');
+        const game = snapshot.val();
+        if (game.opponent !== this.currentUser.username) throw new Error('This challenge is not for you');
+        if (game.status !== 'pending') throw new Error('This challenge is no longer pending');
+
+        await ref.update({
+            status: 'active',
+            startedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastAction: '@' + this.currentUser.username + ' accepted the challenge!'
+        });
+    }
+
+    async openGameSession(panel, gameId) {
+        if (panel._gameRef && panel._gameCallback) {
+            panel._gameRef.off('value', panel._gameCallback);
+        }
+
+        const gameRef = this.db.ref('games/' + gameId);
+        const callback = (snapshot) => {
+            const game = snapshot.val();
+            if (!game) {
+                panel.innerHTML = '<div class="mini-game-description">This game was removed.</div>';
+                return;
+            }
+            this.renderGameSession(panel, { id: gameId, ...game });
+        };
+
+        gameRef.on('value', callback);
+        panel._gameRef = gameRef;
+        panel._gameCallback = callback;
+
+        const snap = await gameRef.get();
+        if (snap.exists()) {
+            callback(snap);
+        } else {
+            panel.innerHTML = '<div class="mini-game-description">This game no longer exists.</div>';
+        }
+    }
+
+    renderGameSession(panel, game) {
+        panel.innerHTML = '';
+        const headerRow = document.createElement('div');
+        headerRow.style.display = 'flex';
+        headerRow.style.alignItems = 'center';
+        headerRow.style.justifyContent = 'space-between';
+        headerRow.style.gap = '12px';
+
+        const header = document.createElement('div');
+        header.className = 'mini-game-header';
+        header.textContent = this.getGameTemplate(game.type).title;
+
+        const backBtn = document.createElement('button');
+        backBtn.className = 'mini-game-close-btn';
+        backBtn.textContent = 'Back';
+        backBtn.onclick = () => {
+            if (panel._gameRef && panel._gameCallback) {
+                panel._gameRef.off('value', panel._gameCallback);
+            }
+            this.toggleMiniGamePanel();
+        };
+
+        headerRow.appendChild(header);
+        headerRow.appendChild(backBtn);
+        panel.appendChild(headerRow);
+
+        const description = document.createElement('div');
+        description.className = 'mini-game-description';
+        description.textContent = this.getGameTemplate(game.type).description;
         panel.appendChild(description);
-        panel.appendChild(scoreText);
-        panel.appendChild(actionBtn);
-        panel.appendChild(resultText);
-        panel.appendChild(closeBtn);
 
-        document.body.appendChild(panel);
+        const status = document.createElement('div');
+        status.className = 'mini-game-status';
+        status.textContent = game.status === 'pending'
+            ? 'Waiting to start'
+            : game.status === 'active'
+                ? 'Game in progress'
+                : 'Completed';
+        panel.appendChild(status);
+
+        const scores = document.createElement('div');
+        scores.className = 'mini-game-status';
+        scores.textContent = `${game.host}: ${game.hostScore || 0}  —  ${game.opponent}: ${game.opponentScore || 0}`;
+        panel.appendChild(scores);
+
+        if (game.status === 'pending') {
+            if (game.opponent === this.currentUser.username) {
+                const inviteText = document.createElement('div');
+                inviteText.className = 'mini-game-description';
+                inviteText.textContent = `@${game.host} challenged you to ${this.getGameTemplate(game.type).title}.`;
+                panel.appendChild(inviteText);
+                const acceptBtn = document.createElement('button');
+                acceptBtn.className = 'mini-game-button';
+                acceptBtn.textContent = 'Accept Challenge';
+                acceptBtn.onclick = async () => {
+                    try {
+                        await this.acceptGameChallenge(game.id);
+                    } catch (err) {
+                        alert('Unable to accept challenge: ' + err.message);
+                    }
+                };
+                panel.appendChild(acceptBtn);
+            } else {
+                const waitText = document.createElement('div');
+                waitText.className = 'mini-game-description';
+                waitText.textContent = 'Waiting for the opponent to accept your challenge.';
+                panel.appendChild(waitText);
+            }
+            return;
+        }
+
+        const resultText = document.createElement('div');
+        resultText.className = 'mini-game-result';
+        if (game.lastAction) resultText.textContent = game.lastAction;
+        panel.appendChild(resultText);
+
+        if (game.status === 'complete') {
+            const winnerText = document.createElement('div');
+            winnerText.className = 'mini-game-description';
+            winnerText.textContent = game.result || 'This game is finished.';
+            panel.appendChild(winnerText);
+            return;
+        }
+
+        const role = this.currentUser.username === game.host ? 'host' : 'opponent';
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'mini-game-button';
+        actionBtn.textContent = game.type === 'tap-race' ? 'Tap!' : game.type === 'number-duel' ? 'Roll!' : 'Play!';
+        actionBtn.onclick = async () => {
+            try {
+                await this.performPvpAction(game.id, role);
+            } catch (err) {
+                alert('Unable to complete action: ' + err.message);
+            }
+        };
+        panel.appendChild(actionBtn);
+
+        const goalText = document.createElement('div');
+        goalText.className = 'mini-game-description';
+        goalText.textContent = `First to ${game.goal || this.getGameTemplate(game.type).goal || 1} points wins.`;
+        panel.appendChild(goalText);
+    }
+
+    async performPvpAction(gameId, role) {
+        const gameRef = this.db.ref('games/' + gameId);
+        const snapshot = await gameRef.get();
+        if (!snapshot.exists()) throw new Error('Game not found');
+        const game = snapshot.val();
+        if (game.status !== 'active') return;
+
+        const template = this.getGameTemplate(game.type);
+        const scale = game.type === 'tap-race' ? 1 : game.type === 'number-duel' ? Math.ceil(Math.random() * 4) : Math.ceil(Math.random() * 3);
+        const updates = {
+            updatedAt: new Date().toISOString(),
+            lastAction: '@' + this.currentUser.username + ' scored +' + scale + ' points'
+        };
+
+        if (role === 'host') {
+            updates.hostScore = (game.hostScore || 0) + scale;
+            if (updates.hostScore >= (game.goal || template.goal || 20)) {
+                updates.status = 'complete';
+                updates.result = '@' + game.host + ' wins ' + template.title + '!';
+            }
+        } else {
+            updates.opponentScore = (game.opponentScore || 0) + scale;
+            if (updates.opponentScore >= (game.goal || template.goal || 20)) {
+                updates.status = 'complete';
+                updates.result = '@' + game.opponent + ' wins ' + template.title + '!';
+            }
+        }
+
+        await gameRef.update(updates);
+    }
+
+    openSoloGame(panel, game) {
+        panel.innerHTML = '';
+        const headerRow = document.createElement('div');
+        headerRow.style.display = 'flex';
+        headerRow.style.alignItems = 'center';
+        headerRow.style.justifyContent = 'space-between';
+        headerRow.style.gap = '12px';
+
+        const header = document.createElement('div');
+        header.className = 'mini-game-header';
+        header.textContent = game.title;
+
+        const backBtn = document.createElement('button');
+        backBtn.className = 'mini-game-close-btn';
+        backBtn.textContent = 'Back';
+        backBtn.onclick = () => {
+            if (panel._gameRef && panel._gameCallback) {
+                panel._gameRef.off('value', panel._gameCallback);
+            }
+            this.toggleMiniGamePanel();
+        };
+
+        headerRow.appendChild(header);
+        headerRow.appendChild(backBtn);
+        panel.appendChild(headerRow);
+
+        const description = document.createElement('div');
+        description.className = 'mini-game-description';
+        description.textContent = game.description;
+        panel.appendChild(description);
+
+        const state = { score: 0, target: game.goal || 0, attempts: 0, matched: [], openCards: [], pairs: [] };
+        const resultText = document.createElement('div');
+        resultText.className = 'mini-game-result';
+        const actionContainer = document.createElement('div');
+        actionContainer.style.display = 'grid';
+        actionContainer.style.gap = '10px';
+
+        const updateSoloStatus = (text) => {
+            resultText.textContent = text;
+        };
+
+        if (game.id === 'quick-tap') {
+            const scoreText = document.createElement('div');
+            scoreText.className = 'mini-game-score';
+            scoreText.textContent = `Score: ${state.score} / ${state.target}`;
+            const actionBtn = document.createElement('button');
+            actionBtn.className = 'mini-game-button';
+            actionBtn.textContent = 'Tap!';
+            actionBtn.onclick = () => {
+                if (state.score >= state.target) return;
+                state.score += 1;
+                scoreText.textContent = `Score: ${state.score} / ${state.target}`;
+                if (state.score >= state.target) {
+                    updateSoloStatus('🎉 You hit the target! Nice job.');
+                    actionBtn.disabled = true;
+                }
+            };
+            actionContainer.appendChild(scoreText);
+            actionContainer.appendChild(actionBtn);
+        } else if (game.id === 'guess-number') {
+            const promptText = document.createElement('div');
+            promptText.className = 'mini-game-description';
+            promptText.textContent = 'Guess a number from 1 to 10.';
+            const select = document.createElement('select');
+            select.className = 'mini-game-input';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = '-- choose your guess --';
+            select.appendChild(defaultOpt);
+            for (let i = 1; i <= 10; i++) {
+                const option = document.createElement('option');
+                option.value = String(i);
+                option.textContent = String(i);
+                select.appendChild(option);
+            }
+            const playBtn = document.createElement('button');
+            playBtn.className = 'mini-game-button';
+            playBtn.textContent = 'Guess';
+            playBtn.onclick = () => {
+                const guess = parseInt(select.value, 10);
+                if (!guess) {
+                    updateSoloStatus('Pick a number first.');
+                    return;
+                }
+                const target = Math.floor(Math.random() * 10) + 1;
+                if (guess === target) {
+                    updateSoloStatus('✅ Perfect! The number was ' + target + '.');
+                } else {
+                    updateSoloStatus('❌ Nope. The number was ' + target + '. Try again!');
+                }
+            };
+            actionContainer.appendChild(promptText);
+            actionContainer.appendChild(select);
+            actionContainer.appendChild(playBtn);
+        } else {
+            const cards = ['🍎','🍎','🍌','🍌','🍒','🍒'];
+            state.pairs = cards.sort(() => Math.random() - 0.5);
+            const board = document.createElement('div');
+            board.style.display = 'grid';
+            board.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
+            board.style.gap = '8px';
+            const cardElements = [];
+            state.pairs.forEach((value, index) => {
+                const card = document.createElement('button');
+                card.className = 'mini-game-button';
+                card.textContent = '❓';
+                card.style.minHeight = '48px';
+                card.onclick = () => {
+                    if (state.matched.includes(index) || state.openCards.includes(index) || state.openCards.length >= 2) return;
+                    state.openCards.push(index);
+                    card.textContent = value;
+                    if (state.openCards.length === 2) {
+                        const [first, second] = state.openCards;
+                        if (state.pairs[first] === state.pairs[second]) {
+                            state.matched.push(first, second);
+                            updateSoloStatus('Match found!');
+                            if (state.matched.length === state.pairs.length) {
+                                updateSoloStatus('🎉 All pairs matched! Nice memory.');
+                            }
+                            state.openCards = [];
+                        } else {
+                            updateSoloStatus('Not a match — try again.');
+                            setTimeout(() => {
+                                cardElements[first].textContent = '❓';
+                                cardElements[second].textContent = '❓';
+                                state.openCards = [];
+                            }, 800);
+                        }
+                    }
+                };
+                board.appendChild(card);
+                cardElements.push(card);
+            });
+            actionContainer.appendChild(board);
+        }
+
+        panel.appendChild(actionContainer);
+        panel.appendChild(resultText);
+    }
+
+    async performPvpAction(gameId, role) {
+        const gameRef = this.db.ref('games/' + gameId);
+        const snapshot = await gameRef.get();
+        if (!snapshot.exists()) throw new Error('Game not found');
+        const game = snapshot.val();
+        if (game.status !== 'active') return;
+        const template = this.getGameTemplate(game.type);
+        const increment = game.type === 'tap-race' ? 1 : game.type === 'number-duel' ? Math.ceil(Math.random() * 6) : Math.ceil(Math.random() * 3);
+        const updates = {
+            updatedAt: new Date().toISOString(),
+            lastAction: '@' + this.currentUser.username + ' scored +' + increment + ' points'
+        };
+        if (role === 'host') {
+            updates.hostScore = (game.hostScore || 0) + increment;
+            if (updates.hostScore >= (game.goal || template.goal || 20)) {
+                updates.status = 'complete';
+                updates.result = '@' + game.host + ' wins ' + template.title + '!';
+            }
+        } else {
+            updates.opponentScore = (game.opponentScore || 0) + increment;
+            if (updates.opponentScore >= (game.goal || template.goal || 20)) {
+                updates.status = 'complete';
+                updates.result = '@' + game.opponent + ' wins ' + template.title + '!';
+            }
+        }
+        await gameRef.update(updates);
     }
 
     async handleSendMessage() {
@@ -1485,6 +2041,12 @@ class MessagingApp {
 
     startScanner() {
         if (this.html5QrCode) return;
+        if (typeof Html5Qrcode === 'undefined') {
+            console.error('QR scanner library not loaded');
+            const statusElem = document.getElementById('qrStatus');
+            if (statusElem) statusElem.textContent = 'QR scanner unavailable';
+            return;
+        }
         this.html5QrCode = new Html5Qrcode('qrReaderContainer');
         this.html5QrCode.start(
             { facingMode: 'environment' },
@@ -1504,9 +2066,16 @@ class MessagingApp {
     stopScanner() {
         if (this.html5QrCode) {
             this.html5QrCode.stop().then(() => {
-                this.html5QrCode.clear();
+                try {
+                    this.html5QrCode.clear();
+                } catch (err) {
+                    console.warn('QR clear failed', err);
+                }
                 this.html5QrCode = null;
-            }).catch(err => console.error('Error stopping scanner', err));
+            }).catch(err => {
+                console.error('Error stopping scanner', err);
+                this.html5QrCode = null;
+            });
         }
     }
 
