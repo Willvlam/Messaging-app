@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = '- Added username index for faster lookups and to enforce case-insensitive uniqueness\n- Updated signup and login flows to utilize the username index\n- Added fallback logic in username resolution for existing accounts created before the index was implemented';
+const PATCH_NOTE = 'added game mode and fixed some bugs';
 
 // Safari / WebKit compatibility shim for media fullscreen APIs
 if (typeof HTMLMediaElement !== 'undefined') {
@@ -985,10 +985,9 @@ class MessagingApp {
                 bubble.appendChild(quote);
             }
 
-            if (msg.type === 'file') {
+            if (msg.type === 'file' || msg.type === 'audio') {
                 const src = msg.downloadURL || msg.data || '';
                 const isImage = src && (msg.isImage || (msg.data && msg.data.startsWith('data:image')));
-                const isAudio = src && (msg.data && msg.data.startsWith('data:audio')) || /\.(mp3|wav|ogg|webm|m4a|aac)$/i.test(msg.filename || '');
                 if (isImage) {
                     const img = document.createElement('img');
                     img.src = src;
@@ -1009,35 +1008,14 @@ class MessagingApp {
                     fname.textContent = msg.filename;
                     fname.style.cssText = 'font-size:11px;margin-top:4px;';
                     bubble.appendChild(fname);
-                } else if (isAudio) {
-                    const audio = document.createElement('audio');
-                    audio.controls = true;
-                    audio.preload = 'metadata';
-                    audio.src = src;
-                    audio.style.cssText = 'width:100%;margin-top:6px;';
-                    bubble.appendChild(audio);
-                    const fname = document.createElement('div');
-                    fname.textContent = msg.filename || 'Audio file';
-                    fname.style.cssText = 'font-size:11px;margin-top:4px;';
-                    bubble.appendChild(fname);
                 } else {
                     const link = document.createElement('a');
                     link.href = src || '#';
                     link.textContent = '📎 ' + (msg.filename || 'file');
-                    link.download = msg.filename;
+                    if (msg.filename) link.download = msg.filename;
+                    link.target = '_blank';
                     bubble.appendChild(link);
                 }
-            } else if (msg.type === 'audio') {
-                const audio = document.createElement('audio');
-                audio.controls = true;
-                audio.preload = 'metadata';
-                audio.src = msg.data || msg.downloadURL || '';
-                audio.style.cssText = 'width:100%;margin-top:6px;';
-                bubble.appendChild(audio);
-                const fname = document.createElement('div');
-                fname.textContent = msg.filename || 'Voice message';
-                fname.style.cssText = 'font-size:11px;margin-top:4px;';
-                bubble.appendChild(fname);
             } else {
                 bubble.appendChild(this.linkifyText(msg.text));
             }
@@ -1108,7 +1086,6 @@ class MessagingApp {
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         document.getElementById('sendBtn').addEventListener('click', () => this.handleSendMessage());
         document.getElementById('sendFileBtn').addEventListener('click', () => this.handleSendFile());
-        document.getElementById('recordAudioBtn').addEventListener('click', () => this.handleRecordAudio());
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleSendMessage();
         });
@@ -1137,6 +1114,7 @@ class MessagingApp {
         });
         document.getElementById('inviteFriendBtn').addEventListener('click', () => this.handleInviteFriend());
         document.getElementById('membersBtn').addEventListener('click', () => this.showMembersModal());
+        document.getElementById('miniGameBtn').addEventListener('click', () => this.toggleMiniGamePanel());
         document.getElementById('exportQrBtn').addEventListener('click', () => this.showQrExportModal());
         document.getElementById('importQrBtn').addEventListener('click', () => this.showQrImportModal());
         document.getElementById('downloadQrBtn').addEventListener('click', () => {
@@ -1271,164 +1249,63 @@ class MessagingApp {
         if (sendBtn) sendBtn.disabled = disabled;
         if (fileBtn) fileBtn.disabled = disabled;
         if (emojiBtn) emojiBtn.disabled = disabled;
-        const recordBtn = document.getElementById('recordAudioBtn');
-        if (recordBtn) recordBtn.disabled = disabled;
     }
 
-    getPreferredAudioMimeType() {
-        if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
-            return '';
+    toggleMiniGamePanel() {
+        const existing = document.getElementById('miniGamePanel');
+        if (existing) {
+            existing.remove();
+            return;
         }
-        const preferredTypes = [
-            'audio/webm;codecs=opus',
-            'audio/ogg;codecs=opus',
-            'audio/mp4',
-            'audio/mpeg',
-            'audio/webm',
-            'audio/wav'
-        ];
-        for (const type of preferredTypes) {
-            try {
-                if (MediaRecorder.isTypeSupported(type)) {
-                    return type;
-                }
-            } catch (err) {
-                continue;
+
+        let score = 0;
+        const panel = document.createElement('div');
+        panel.id = 'miniGamePanel';
+        panel.className = 'mini-game-panel';
+
+        const header = document.createElement('div');
+        header.className = 'mini-game-header';
+        header.textContent = 'Mini Game';
+
+        const description = document.createElement('div');
+        description.className = 'mini-game-description';
+        description.textContent = 'Click the button 10 times to win.';
+
+        const scoreText = document.createElement('div');
+        scoreText.className = 'mini-game-score';
+        scoreText.textContent = 'Score: 0 / 10';
+
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'mini-game-button';
+        actionBtn.textContent = 'Tap me!';
+
+        const resultText = document.createElement('div');
+        resultText.className = 'mini-game-result';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'mini-game-close-btn';
+        closeBtn.textContent = 'Close';
+
+        actionBtn.onclick = () => {
+            if (score >= 10) return;
+            score += 1;
+            scoreText.textContent = 'Score: ' + score + ' / 10';
+            if (score === 10) {
+                resultText.textContent = '🎉 You won! Great job.';
+                actionBtn.textContent = 'Done';
+                actionBtn.disabled = true;
             }
-        }
-        return '';
-    }
-
-    async handleRecordAudio() {
-        if (!this.currentChat) {
-            alert('Open a chat first to record audio');
-            return;
-        }
-        if (this.isRecordingAudio) {
-            await this.stopAudioRecording();
-            return;
-        }
-        await this.startAudioRecording();
-    }
-
-    async startAudioRecording() {
-        const recordBtn = document.getElementById('recordAudioBtn');
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert('Audio recording is not supported in this browser.');
-            return;
-        }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.audioStream = stream;
-            this.recordingChunks = [];
-            let recorderOptions = {};
-            const preferredMimeType = this.getPreferredAudioMimeType();
-            if (preferredMimeType) {
-                recorderOptions.mimeType = preferredMimeType;
-            }
-            this.mediaRecorder = Object.keys(recorderOptions).length > 0
-                ? new MediaRecorder(stream, recorderOptions)
-                : new MediaRecorder(stream);
-            this.mediaRecorder.ondataavailable = (event) => {
-                if (event.data && event.data.size > 0) {
-                    this.recordingChunks.push(event.data);
-                }
-            };
-            this.mediaRecorder.onstop = async () => {
-                const blobType = this.mediaRecorder?.mimeType || (this.recordingChunks[0] && this.recordingChunks[0].type);
-                const blob = blobType
-                    ? new Blob(this.recordingChunks, { type: blobType })
-                    : new Blob(this.recordingChunks);
-                await this.sendAudioBlob(blob);
-                this.resetAudioRecordingUI();
-            };
-            this.mediaRecorder.start();
-            this.isRecordingAudio = true;
-            if (recordBtn) {
-                recordBtn.textContent = 'Stop & Send';
-                recordBtn.classList.add('recording');
-            }
-        } catch (err) {
-            alert('Microphone access denied or unavailable: ' + err.message);
-        }
-    }
-
-    async stopAudioRecording() {
-        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-            this.mediaRecorder.stop();
-        }
-        if (this.audioStream) {
-            this.audioStream.getTracks().forEach(track => track.stop());
-            this.audioStream = null;
-        }
-        this.isRecordingAudio = false;
-        const recordBtn = document.getElementById('recordAudioBtn');
-        if (recordBtn) {
-            recordBtn.textContent = 'Record';
-            recordBtn.classList.remove('recording');
-        }
-    }
-
-    resetAudioRecordingUI() {
-        this.isRecordingAudio = false;
-        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-            try { this.mediaRecorder.stop(); } catch (e) {}
-        }
-        this.mediaRecorder = null;
-        this.audioStream = null;
-        this.recordingChunks = [];
-        const recordBtn = document.getElementById('recordAudioBtn');
-        if (recordBtn) {
-            recordBtn.textContent = 'Record';
-            recordBtn.classList.remove('recording');
-        }
-    }
-
-    async sendAudioBlob(blob) {
-        if (!blob || !blob.size) return;
-        if (blob.size > 5 * 1024 * 1024) {
-            alert('Audio too large (max 5MB)');
-            return;
-        }
-        if (!this.currentChat) {
-            alert('Open a chat first to send audio');
-            return;
-        }
-        const dataUrl = await this.readBlobAsDataURL(blob);
-        const extension = (blob.type.split(';')[0].split('/')[1] || 'webm').replace(/[\s]+/g, '');
-        const filename = 'voice-message.' + extension;
-        const content = {
-            type: 'audio',
-            filename,
-            data: dataUrl
         };
-        if (this.replyingTo) {
-            content.replyTo = {
-                from: this.replyingTo.from,
-                text: this.replyingTo.text || null,
-                filename: this.replyingTo.filename || null,
-                type: this.replyingTo.type
-            };
-        }
-        try {
-            if (this.currentChatType === 'room') {
-                await this.saveRoomMessage(this.currentChat, this.currentUser.username, content);
-            } else {
-                await this.saveMessage(this.currentUser.username, this.currentChat, content);
-            }
-            this.cancelReply();
-        } catch (err) {
-            alert('Failed to send audio: ' + err.message);
-        }
-    }
+        closeBtn.onclick = () => panel.remove();
 
-    readBlobAsDataURL(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(blob);
-        });
+        panel.appendChild(header);
+        panel.appendChild(description);
+        panel.appendChild(scoreText);
+        panel.appendChild(actionBtn);
+        panel.appendChild(resultText);
+        panel.appendChild(closeBtn);
+
+        document.body.appendChild(panel);
     }
 
     async handleSendMessage() {
@@ -1713,24 +1590,18 @@ class MessagingApp {
                 div.appendChild(sender);
                 const bubble = document.createElement('div');
                 bubble.className = 'spy-bubble';
-                if (msg.type === 'file') {
+                if (msg.type === 'file' || msg.type === 'audio') {
                     const src = msg.downloadURL || msg.data || '';
                     const isImage = src && (msg.isImage || (msg.data && msg.data.startsWith('data:image')));
-                    const isAudio = src && (msg.data && msg.data.startsWith('data:audio')) || /\.(mp3|wav|ogg|webm|m4a|aac)$/i.test(msg.filename || '');
                     if (isImage) {
                         const img = document.createElement('img');
                         img.src = src;
                         bubble.appendChild(img);
-                    } else if (isAudio) {
-                        const audio = document.createElement('audio');
-                        audio.controls = true;
-                        audio.src = src;
-                        audio.style.cssText = 'width:100%;margin-top:6px;';
-                        bubble.appendChild(audio);
                     } else {
                         const link = document.createElement('a');
-                        link.href = src;
+                        link.href = src || '#';
                         link.textContent = '📎 ' + (msg.filename || 'file');
+                        if (msg.filename) link.download = msg.filename;
                         link.target = '_blank';
                         bubble.appendChild(link);
                     }
