@@ -1273,6 +1273,18 @@ class MessagingApp {
         const panel = document.createElement('div');
         panel.id = 'miniGamePanel';
         panel.className = 'mini-game-panel';
+        document.body.appendChild(panel);
+        await this.renderMiniGamePanel(panel);
+    }
+
+    async renderMiniGamePanel(panel) {
+        if (panel._gameRef && panel._gameCallback) {
+            panel._gameRef.off('value', panel._gameCallback);
+            panel._gameRef = null;
+            panel._gameCallback = null;
+        }
+
+        panel.innerHTML = '';
 
         const headerRow = document.createElement('div');
         headerRow.style.display = 'flex';
@@ -1306,7 +1318,6 @@ class MessagingApp {
         const content = document.createElement('div');
         content.className = 'mini-game-content';
         panel.appendChild(content);
-        document.body.appendChild(panel);
 
         if (!this.currentUser) {
             const loginText = document.createElement('div');
@@ -1388,7 +1399,7 @@ class MessagingApp {
             try {
                 await this.createGameChallenge(gameType, friend);
                 createStatus.textContent = 'Challenge sent to @' + friend + '!';
-                this.toggleMiniGamePanel();
+                this.renderMiniGamePanel(panel);
             } catch (err) {
                 createStatus.textContent = 'Unable to send challenge: ' + err.message;
             }
@@ -1580,7 +1591,7 @@ class MessagingApp {
             if (panel._gameRef && panel._gameCallback) {
                 panel._gameRef.off('value', panel._gameCallback);
             }
-            this.toggleMiniGamePanel();
+            this.renderMiniGamePanel(panel);
         };
 
         headerRow.appendChild(header);
@@ -1714,7 +1725,7 @@ class MessagingApp {
             if (panel._gameRef && panel._gameCallback) {
                 panel._gameRef.off('value', panel._gameCallback);
             }
-            this.toggleMiniGamePanel();
+            this.renderMiniGamePanel(panel);
         };
 
         headerRow.appendChild(header);
