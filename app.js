@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'added admin commands, fixed some bugs, and made various performance improvements';
+const PATCH_NOTE = 'added recording audio messages, fixed some bugs, and improved performance';
 
 // =====================
 // Emoji Data
@@ -188,6 +188,10 @@ class MessagingApp {
         this._messages = [];
         this.replyingTo = null;
         this.emojiPickerOpen = false;
+        this.mediaRecorder = null;
+        this.audioStream = null;
+        this.recordingChunks = [];
+        this.isRecordingAudio = false;
         this.loadCurrentUser();
         this.initializeEventListeners();
         this.render();
@@ -896,17 +900,19 @@ class MessagingApp {
             }
 
             if (msg.type === 'file') {
-                const imgSrc = msg.downloadURL || (msg.data && msg.data.startsWith('data:image') ? msg.data : null);
-                if (imgSrc && (msg.isImage || (msg.data && msg.data.startsWith('data:image')))) {
+                const src = msg.downloadURL || msg.data || '';
+                const isImage = src && (msg.isImage || (msg.data && msg.data.startsWith('data:image')));
+                const isAudio = src && (msg.data && msg.data.startsWith('data:audio')) || /\.(mp3|wav|ogg|webm|m4a|aac)$/i.test(msg.filename || '');
+                if (isImage) {
                     const img = document.createElement('img');
-                    img.src = imgSrc;
+                    img.src = src;
                     img.style.cssText = 'max-width:100%;width:250px;border-radius:8px;cursor:pointer;display:block;';
                     img.title = 'Tap to view full size';
                     img.onclick = () => {
                         const overlay = document.createElement('div');
                         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer;';
                         const fullImg = document.createElement('img');
-                        fullImg.src = imgSrc;
+                        fullImg.src = src;
                         fullImg.style.cssText = 'max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;';
                         overlay.appendChild(fullImg);
                         overlay.onclick = () => document.body.removeChild(overlay);
@@ -917,13 +923,33 @@ class MessagingApp {
                     fname.textContent = msg.filename;
                     fname.style.cssText = 'font-size:11px;margin-top:4px;';
                     bubble.appendChild(fname);
+                } else if (isAudio) {
+                    const audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    audio.style.cssText = 'width:100%;margin-top:6px;';
+                    bubble.appendChild(audio);
+                    const fname = document.createElement('div');
+                    fname.textContent = msg.filename || 'Audio file';
+                    fname.style.cssText = 'font-size:11px;margin-top:4px;';
+                    bubble.appendChild(fname);
                 } else {
                     const link = document.createElement('a');
-                    link.href = msg.downloadURL || msg.data || '#';
+                    link.href = src || '#';
                     link.textContent = '📎 ' + (msg.filename || 'file');
                     link.download = msg.filename;
                     bubble.appendChild(link);
                 }
+            } else if (msg.type === 'audio') {
+                const audio = document.createElement('audio');
+                audio.controls = true;
+                audio.src = msg.data || msg.downloadURL || '';
+                audio.style.cssText = 'width:100%;margin-top:6px;';
+                bubble.appendChild(audio);
+                const fname = document.createElement('div');
+                fname.textContent = msg.filename || 'Voice message';
+                fname.style.cssText = 'font-size:11px;margin-top:4px;';
+                bubble.appendChild(fname);
             } else {
                 bubble.appendChild(this.linkifyText(msg.text));
             }
@@ -994,6 +1020,7 @@ class MessagingApp {
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         document.getElementById('sendBtn').addEventListener('click', () => this.handleSendMessage());
         document.getElementById('sendFileBtn').addEventListener('click', () => this.handleSendFile());
+        document.getElementById('recordAudioBtn').addEventListener('click', () => this.handleRecordAudio());
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleSendMessage();
         });
@@ -1152,6 +1179,130 @@ class MessagingApp {
         if (sendBtn) sendBtn.disabled = disabled;
         if (fileBtn) fileBtn.disabled = disabled;
         if (emojiBtn) emojiBtn.disabled = disabled;
+        const recordBtn = document.getElementById('recordAudioBtn');
+        if (recordBtn) recordBtn.disabled = disabled;
+    }
+
+    async handleRecordAudio() {
+        if (!this.currentChat) {
+            alert('Open a chat first to record audio');
+            return;
+        }
+        if (this.isRecordingAudio) {
+            await this.stopAudioRecording();
+            return;
+        }
+        await this.startAudioRecording();
+    }
+
+    async startAudioRecording() {
+        const recordBtn = document.getElementById('recordAudioBtn');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('Audio recording is not supported in this browser.');
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.audioStream = stream;
+            this.recordingChunks = [];
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data && event.data.size > 0) {
+                    this.recordingChunks.push(event.data);
+                }
+            };
+            this.mediaRecorder.onstop = async () => {
+                const blob = new Blob(this.recordingChunks, { type: 'audio/webm' });
+                await this.sendAudioBlob(blob);
+                this.resetAudioRecordingUI();
+            };
+            this.mediaRecorder.start();
+            this.isRecordingAudio = true;
+            if (recordBtn) {
+                recordBtn.textContent = 'Stop & Send';
+                recordBtn.classList.add('recording');
+            }
+        } catch (err) {
+            alert('Microphone access denied or unavailable: ' + err.message);
+        }
+    }
+
+    async stopAudioRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+        if (this.audioStream) {
+            this.audioStream.getTracks().forEach(track => track.stop());
+            this.audioStream = null;
+        }
+        this.isRecordingAudio = false;
+        const recordBtn = document.getElementById('recordAudioBtn');
+        if (recordBtn) {
+            recordBtn.textContent = 'Record';
+            recordBtn.classList.remove('recording');
+        }
+    }
+
+    resetAudioRecordingUI() {
+        this.isRecordingAudio = false;
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            try { this.mediaRecorder.stop(); } catch (e) {}
+        }
+        this.mediaRecorder = null;
+        this.audioStream = null;
+        this.recordingChunks = [];
+        const recordBtn = document.getElementById('recordAudioBtn');
+        if (recordBtn) {
+            recordBtn.textContent = 'Record';
+            recordBtn.classList.remove('recording');
+        }
+    }
+
+    async sendAudioBlob(blob) {
+        if (!blob || !blob.size) return;
+        if (blob.size > 5 * 1024 * 1024) {
+            alert('Audio too large (max 5MB)');
+            return;
+        }
+        if (!this.currentChat) {
+            alert('Open a chat first to send audio');
+            return;
+        }
+        const dataUrl = await this.readBlobAsDataURL(blob);
+        const extension = blob.type.split('/')[1] || 'webm';
+        const filename = 'voice-message.' + extension;
+        const content = {
+            type: 'audio',
+            filename,
+            data: dataUrl
+        };
+        if (this.replyingTo) {
+            content.replyTo = {
+                from: this.replyingTo.from,
+                text: this.replyingTo.text || null,
+                filename: this.replyingTo.filename || null,
+                type: this.replyingTo.type
+            };
+        }
+        try {
+            if (this.currentChatType === 'room') {
+                await this.saveRoomMessage(this.currentChat, this.currentUser.username, content);
+            } else {
+                await this.saveMessage(this.currentUser.username, this.currentChat, content);
+            }
+            this.cancelReply();
+        } catch (err) {
+            alert('Failed to send audio: ' + err.message);
+        }
+    }
+
+    readBlobAsDataURL(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
     }
 
     async handleSendMessage() {
@@ -1438,10 +1589,18 @@ class MessagingApp {
                 bubble.className = 'spy-bubble';
                 if (msg.type === 'file') {
                     const src = msg.downloadURL || msg.data || '';
-                    if (msg.isImage || (msg.data && msg.data.startsWith('data:image'))) {
+                    const isImage = src && (msg.isImage || (msg.data && msg.data.startsWith('data:image')));
+                    const isAudio = src && (msg.data && msg.data.startsWith('data:audio')) || /\.(mp3|wav|ogg|webm|m4a|aac)$/i.test(msg.filename || '');
+                    if (isImage) {
                         const img = document.createElement('img');
                         img.src = src;
                         bubble.appendChild(img);
+                    } else if (isAudio) {
+                        const audio = document.createElement('audio');
+                        audio.controls = true;
+                        audio.src = src;
+                        audio.style.cssText = 'width:100%;margin-top:6px;';
+                        bubble.appendChild(audio);
                     } else {
                         const link = document.createElement('a');
                         link.href = src;
