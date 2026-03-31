@@ -1,7 +1,7 @@
 // =====================
 // Patch Note — update this before each git push
 // =====================
-const PATCH_NOTE = 'added recording audio messages, fixed some bugs, and improved performance';
+const PATCH_NOTE = '- Added username index for faster lookups and to enforce case-insensitive uniqueness\n- Updated signup and login flows to utilize the username index\n- Added fallback logic in username resolution for existing accounts created before the index was implemented';
 
 // =====================
 // Emoji Data
@@ -213,9 +213,11 @@ class MessagingApp {
         if (username.length < 3) return { success: false, error: 'Username must be at least 3 characters' };
         if (password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
         if (/[.#$\[\]]/.test(username)) return { success: false, error: 'Username cannot contain . # $ [ or ] characters' };
-        const existingUsername = await this.resolveUsername(username);
-        if (existingUsername) return { success: false, error: 'Username already exists' };
+        const lowerUsername = username.toLowerCase();
+        const usernameIndexSnap = await this.db.ref('usernameIndex/' + lowerUsername).get();
+        if (usernameIndexSnap.exists()) return { success: false, error: 'Username already exists' };
         await this.db.ref('users/' + username).set({ username, password, createdAt: new Date().toISOString() });
+        await this.db.ref('usernameIndex/' + lowerUsername).set(username);
         this.currentUser = { username };
         this.saveCurrentUser();
         return { success: true };
@@ -333,12 +335,41 @@ class MessagingApp {
     }
 
     async getUserRooms() {
-        if (this.currentUser.username.toLowerCase() === 'willvlam') {
-            const snap = await this.db.ref('userRooms/Willvlam').get();
-            return snap.exists() ? Object.keys(snap.val()).sort() : [];
+        const username = this.currentUser.username;
+        const userRoomsRef = this.db.ref('userRooms/' + username);
+        const snap = await userRoomsRef.get();
+        if (!snap.exists()) return [];
+
+        const roomNames = Object.keys(snap.val()).sort();
+        const validRooms = [];
+        await Promise.all(roomNames.map(async roomName => {
+            const roomSnap = await this.db.ref('rooms/' + roomName).get();
+            if (roomSnap.exists()) {
+                validRooms.push(roomName);
+            } else {
+                // remove stale room reference if the room was deleted directly in Firebase
+                await userRoomsRef.child(roomName).remove();
+            }
+        }));
+        return validRooms.sort();
+    }
+
+    async deleteRoom(roomName) {
+        const roomSnap = await this.db.ref('rooms/' + roomName).get();
+        if (!roomSnap.exists()) return { success: false, error: 'Room not found' };
+
+        await this.db.ref('rooms/' + roomName).remove();
+
+        const allUserRoomsSnap = await this.db.ref('userRooms').get();
+        if (allUserRoomsSnap.exists()) {
+            const allUserRooms = allUserRoomsSnap.val();
+            for (const user of Object.keys(allUserRooms)) {
+                if (allUserRooms[user] && allUserRooms[user][roomName]) {
+                    await this.db.ref('userRooms/' + user + '/' + roomName).remove();
+                }
+            }
         }
-        const snap = await this.db.ref('userRooms/' + this.currentUser.username).get();
-        return snap.exists() ? Object.keys(snap.val()).sort() : [];
+        return { success: true };
     }
 
     async createRoom(roomName, password) {
@@ -439,16 +470,51 @@ class MessagingApp {
     async deleteMessage(msg) {
         if (!confirm('Delete this message?')) return;
         try {
-            // Use the stored _key to delete directly — no download needed at all
-            if (msg._key) {
+            const deleteByKey = async (key) => {
                 let ref;
                 if (this.currentChatType === 'room') {
-                    ref = this.db.ref('rooms/' + this.currentChat + '/messages/' + msg._key);
+                    ref = this.db.ref('rooms/' + this.currentChat + '/messages/' + key);
                 } else {
-                    const key = this.getConversationKey(this.currentUser.username, this.currentChat);
-                    ref = this.db.ref('messages/' + key + '/' + msg._key);
+                    const convoKey = this.getConversationKey(this.currentUser.username, this.currentChat);
+                    ref = this.db.ref('messages/' + convoKey + '/' + key);
                 }
                 await ref.remove();
+            };
+
+            if (msg && msg._key) {
+                await deleteByKey(msg._key);
+                return;
+            }
+
+            if (!msg || !msg.timestamp || !msg.from) {
+                alert('Unable to delete message: missing metadata. Please refresh and try again.');
+                return;
+            }
+
+            const searchRef = this.currentChatType === 'room'
+                ? this.db.ref('rooms/' + this.currentChat + '/messages')
+                : this.db.ref('messages/' + this.getConversationKey(this.currentUser.username, this.currentChat));
+
+            const snapshot = await searchRef.orderByChild('timestamp').equalTo(msg.timestamp).get();
+            if (!snapshot.exists()) {
+                alert('Unable to find the message to delete.');
+                return;
+            }
+
+            let removed = false;
+            snapshot.forEach(child => {
+                if (removed) return;
+                const value = child.val();
+                if (value && value.from === msg.from) {
+                    if ((value.text || '') === (msg.text || '') && (value.filename || '') === (msg.filename || '')) {
+                        child.ref.remove();
+                        removed = true;
+                    }
+                }
+            });
+
+            if (!removed) {
+                alert('Unable to delete message: no matching entry found.');
             }
         } catch (err) {
             alert('Failed to delete: ' + err.message);
@@ -723,11 +789,21 @@ class MessagingApp {
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'conversation-delete';
             const isWillvlamUser = this.currentUser.username.toLowerCase() === 'willvlam';
-            deleteBtn.textContent = type === 'room' ? (isWillvlamUser ? 'Hide' : 'Leave') : 'Del';
+            deleteBtn.textContent = type === 'room' ? (isWillvlamUser ? 'Delete' : 'Leave') : 'Del';
             deleteBtn.onclick = async (e) => {
                 e.stopPropagation();
                 if (type === 'room' && isWillvlamUser) {
-                    if (this.currentChat === name) { this.currentChat = null; this.detachMessageListener(); }
+                    const confirmed = confirm('Delete this room completely from Firebase?');
+                    if (!confirmed) return;
+                    const result = await this.deleteRoom(name);
+                    if (!result.success) {
+                        alert(result.error || 'Failed to delete room');
+                        return;
+                    }
+                    if (this.currentChat === name) {
+                        this.currentChat = null;
+                        this.detachMessageListener();
+                    }
                     await this.updateAppUI();
                 } else if (type === 'room') {
                     await this.leaveRoom(name);
@@ -1148,10 +1224,14 @@ class MessagingApp {
         const cleanName = username.replace(/^@/, '');
         const exactSnap = await this.db.ref('users/' + cleanName).get();
         if (exactSnap.exists()) return cleanName;
+        const lowerTarget = cleanName.toLowerCase();
+        const indexSnap = await this.db.ref('usernameIndex/' + lowerTarget).get();
+        if (indexSnap.exists()) return indexSnap.val();
+
+        // Fallback for existing accounts created before the username index existed
         const usersSnap = await this.db.ref('users').get();
         if (!usersSnap.exists()) return null;
         const users = usersSnap.val();
-        const lowerTarget = cleanName.toLowerCase();
         for (const storedName of Object.keys(users)) {
             if (storedName.toLowerCase() === lowerTarget) {
                 return storedName;
