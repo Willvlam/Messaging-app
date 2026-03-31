@@ -3,6 +3,16 @@
 // =====================
 const PATCH_NOTE = '- Added username index for faster lookups and to enforce case-insensitive uniqueness\n- Updated signup and login flows to utilize the username index\n- Added fallback logic in username resolution for existing accounts created before the index was implemented';
 
+// Safari / WebKit compatibility shim for media fullscreen APIs
+if (typeof HTMLMediaElement !== 'undefined') {
+    if (typeof HTMLMediaElement.prototype.webkitEnterFullscreen !== 'function') {
+        HTMLMediaElement.prototype.webkitEnterFullscreen = function() {};
+    }
+    if (typeof HTMLMediaElement.prototype.webkitExitFullscreen !== 'function') {
+        HTMLMediaElement.prototype.webkitExitFullscreen = function() {};
+    }
+}
+
 // =====================
 // Emoji Data
 // =====================
