@@ -651,6 +651,8 @@ body {
 .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 8px; max-height: 220px; overflow-y: auto; }
 .emoji-btn { background: none; border: none; font-size: 22px; padding: 4px; cursor: pointer; border-radius: 5px; width: auto; text-align: center; transition: background 0.15s; }
 .emoji-btn:hover { background: #f0f0f0; }
+.emoji-btn-img { width: 24px; height: 24px; display: block; object-fit: contain; }
+.inline-emoji { width: 1.2em; height: 1.2em; vertical-align: -0.15em; margin: 0 0.05em; }
 
 /* =====================
    Modals

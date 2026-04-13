@@ -2,7 +2,7 @@
 // Patch Note — update this before each git push
 // =====================
 
-const PATCH_NOTE = 'MULTIPLAYER MINIGAMES!!!';
+const PATCH_NOTE = 'added astolfo emoji';
 const MINI_GAMES = [
   { id: 'quick-tap', title: 'Quick Tap', description: 'Tap fast to reach 20 points.', mode: 'solo', goal: 20 },
   { id: 'guess-number', title: 'Guess Number', description: 'Guess a number between 1 and 10 and beat the computer.', mode: 'solo' },
@@ -158,7 +158,8 @@ const EMOJI_CATEGORIES = {
   fantasy: [
     '🧙','🧛','🧜','🧝','🧞','🧚','🧟','🐉','🐲','🦄','👻','👽','👾','🤖',
     '😈','👿','👹','👺','💀','☠️','🔮','🪄','🧿','🪬','⚔️','🛡️','🗡️','🏹',
-    '🔯','✡️','⭐','🌟','🌈','🌊','🌪️','🔥','❄️','⚡','🌙','☀️','💫','✨'
+    '🔯','✡️','⭐','🌟','🌈','🌊','🌪️','🔥','❄️','⚡','🌙','☀️','💫','✨',
+    { code: ':astolfo:', alt: 'Astolfo', title: 'Astolfo', src: 'emoji images/astolfo_img_1.jpeg' }
   ],
   flags: [
     '🏳️','🏴','🏴‍☠️','🏳️‍🌈','🏳️‍⚧️','🏁','🚩','🎌',
@@ -194,6 +195,13 @@ const EMOJI_CATEGORIES = {
     '🟦','🟪','🟫','⬛','⬜','🏁','🚩','🎌','🏴','🏳️','🏴‍☠️','🏳️‍🌈','🏳️‍⚧️'
   ]
 };
+
+const CUSTOM_EMOJI_MAP = Object.values(EMOJI_CATEGORIES).flat().reduce((map, entry) => {
+  if (entry && typeof entry === 'object' && entry.code) {
+    map[entry.code] = entry;
+  }
+  return map;
+}, {});
 
 class MessagingApp {
     constructor() {
@@ -888,20 +896,35 @@ class MessagingApp {
         const fragment = document.createDocumentFragment();
         let match;
         let lastIndex = 0;
-        const regex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+        const regex = /(:[a-z0-9_-]+:)|(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
         while ((match = regex.exec(text)) !== null) {
             if (match.index > lastIndex) {
                 fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
             }
-            const url = match[0];
-            const href = url.startsWith('http') ? url : 'https://' + url;
-            const a = document.createElement('a');
-            a.href = href;
-            a.textContent = url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            fragment.appendChild(a);
-            lastIndex = match.index + url.length;
+            if (match[1]) {
+                const placeholder = match[1].toLowerCase();
+                const emojiData = CUSTOM_EMOJI_MAP[placeholder];
+                if (emojiData) {
+                    const img = document.createElement('img');
+                    img.src = emojiData.src;
+                    img.alt = emojiData.alt || placeholder;
+                    img.className = 'inline-emoji';
+                    img.title = emojiData.title || emojiData.alt || placeholder;
+                    fragment.appendChild(img);
+                } else {
+                    fragment.appendChild(document.createTextNode(placeholder));
+                }
+            } else {
+                const url = match[2] || match[3];
+                const href = url.startsWith('http') ? url : 'https://' + url;
+                const a = document.createElement('a');
+                a.href = href;
+                a.textContent = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                fragment.appendChild(a);
+            }
+            lastIndex = match.index + match[0].length;
         }
         if (lastIndex < text.length) {
             fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
@@ -946,8 +969,10 @@ class MessagingApp {
         const input = document.getElementById('messageInput');
         const start = input.selectionStart;
         const end = input.selectionEnd;
-        input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
-        input.selectionStart = input.selectionEnd = start + emoji.length;
+        const insertValue = typeof emoji === 'object' ? (emoji.code || emoji.alt || '') : emoji;
+        if (!insertValue) return;
+        input.value = input.value.substring(0, start) + insertValue + input.value.substring(end);
+        input.selectionStart = input.selectionEnd = start + insertValue.length;
         input.focus();
     }
 
@@ -2288,7 +2313,16 @@ function showEmojiCategory(category) {
     emojis.forEach(emoji => {
         const btn = document.createElement('button');
         btn.className = 'emoji-btn';
-        btn.textContent = emoji;
+        if (emoji && typeof emoji === 'object') {
+            const img = document.createElement('img');
+            img.src = emoji.src;
+            img.alt = emoji.alt || emoji.code || '';
+            img.title = emoji.title || emoji.alt || emoji.code || '';
+            img.className = 'emoji-btn-img';
+            btn.appendChild(img);
+        } else {
+            btn.textContent = emoji;
+        }
         btn.onclick = (e) => { e.stopPropagation(); if (app) app.insertEmoji(emoji); };
         grid.appendChild(btn);
     });
