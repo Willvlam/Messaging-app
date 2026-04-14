@@ -277,8 +277,8 @@
                             <input type="text" placeholder="Option 2" class="input-field poll-option" maxlength="100">
                         </div>
                     </div>
-                    <button id="addPollOptionBtn" class="btn btn-secondary" onclick="addPollOption()">+ Add Option</button>
-                    <button id="createPollBtn" class="btn btn-primary" onclick="createPoll()">Create Poll</button>
+                    <button id="addPollOptionBtn" class="btn btn-secondary" onclick="if(window.app) window.app.addPollOption()">+ Add Option</button>
+                    <button id="createPollBtn" class="btn btn-primary" onclick="if(window.app) window.app.createPoll()">Create Poll</button>
                     <div id="pollCreationError" class="error-message"></div>
                 </div>
             </div>

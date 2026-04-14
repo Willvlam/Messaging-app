@@ -1189,8 +1189,6 @@ class MessagingApp {
             e.stopPropagation();
             this.toggleEmojiPicker();
         });
-        document.getElementById('createPollBtn')?.addEventListener('click', () => this.createPoll());
-        document.getElementById('addPollOptionBtn')?.addEventListener('click', () => this.addPollOption());
         document.addEventListener('click', (e) => {
             const picker = document.getElementById('emojiPicker');
             const btn = document.getElementById('emojiBtn');
@@ -2316,6 +2314,7 @@ class MessagingApp {
     }
 
     addPollOption() {
+        alert('Add Option button clicked!'); // Debug alert
         const container = document.getElementById('pollOptionsContainer');
         const count = container.querySelectorAll('.poll-option-input').length;
         const newOption = document.createElement('div');
@@ -2328,6 +2327,7 @@ class MessagingApp {
     }
 
     async createPoll() {
+        alert('Create Poll button clicked!'); // Debug alert
         const question = document.getElementById('pollQuestion').value.trim();
         const errorEl = document.getElementById('pollCreationError');
         errorEl.textContent = '';
@@ -2620,6 +2620,7 @@ let app;
 
 document.addEventListener('DOMContentLoaded', () => {
     app = new MessagingApp();
+    window.app = app; // Make app globally accessible
 });
 
 function toggleAuthForm(e) {
