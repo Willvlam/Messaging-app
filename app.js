@@ -2,7 +2,7 @@
 // Patch Note — update this before each git push
 // =====================
 
-const PATCH_NOTE = 'added astolfo emoji';
+const PATCH_NOTE = 'added polls for everyone and fpolls for admins with handleing built in for errors and issues ';
 const MINI_GAMES = [
   { id: 'quick-tap', title: 'Quick Tap', description: 'Tap fast to reach 20 points.', mode: 'solo', goal: 20 },
   { id: 'guess-number', title: 'Guess Number', description: 'Guess a number between 1 and 10 and beat the computer.', mode: 'solo' },
@@ -1050,6 +1050,20 @@ class MessagingApp {
                     link.target = '_blank';
                     bubble.appendChild(link);
                 }
+            } else if (msg.type === 'poll') {
+                // Handle poll rendering - skip the bubble for polls
+                this.renderPollInChat(msg, messageDiv); // Append poll to message div
+                container.appendChild(messageDiv);
+                
+                // Add metadata after poll
+                const meta = document.createElement('div');
+                meta.className = 'message-meta';
+                const timestamp = document.createElement('div');
+                timestamp.className = 'message-timestamp';
+                timestamp.textContent = this.formatTime(new Date(msg.timestamp));
+                meta.appendChild(timestamp);
+                messageDiv.appendChild(meta);
+                return;
             } else {
                 bubble.appendChild(this.linkifyText(msg.text));
             }
@@ -1173,6 +1187,8 @@ class MessagingApp {
             e.stopPropagation();
             this.toggleEmojiPicker();
         });
+        document.getElementById('createPollBtn')?.addEventListener('click', () => this.createPoll());
+        document.getElementById('addPollOptionBtn')?.addEventListener('click', () => this.addPollOption());
         document.addEventListener('click', (e) => {
             const picker = document.getElementById('emojiPicker');
             const btn = document.getElementById('emojiBtn');
@@ -1981,6 +1997,24 @@ class MessagingApp {
             return;
         }
 
+        // Poll commands
+        if (trimmed.toLowerCase() === '/poll') {
+            this.showPollCreationModal(false);
+            input.value = '';
+            return;
+        }
+
+        if (trimmed.toLowerCase() === '/fpoll') {
+            if (!this.isModerator()) {
+                alert('Only moderators can create forced polls');
+                input.value = '';
+                return;
+            }
+            this.showPollCreationModal(true);
+            input.value = '';
+            return;
+        }
+
         const content = { type: 'text', text };
         if (this.replyingTo) {
             content.replyTo = {
@@ -2251,6 +2285,360 @@ class MessagingApp {
     closeSpyModal() {
         document.getElementById('spyModal').classList.add('hidden');
     }
+
+    // =====================
+    // Polling System
+    // =====================
+
+    showPollCreationModal(isForced) {
+        this.isCreatingForcedPoll = isForced;
+        document.getElementById('pollCreationModal').classList.remove('hidden');
+        document.getElementById('pollQuestion').value = '';
+        document.getElementById('pollOptionsContainer').innerHTML = `
+            <div class="poll-option-input">
+                <input type="text" placeholder="Option 1" class="input-field poll-option" maxlength="100">
+            </div>
+            <div class="poll-option-input">
+                <input type="text" placeholder="Option 2" class="input-field poll-option" maxlength="100">
+            </div>
+        `;
+        document.getElementById('pollCreationError').textContent = '';
+        document.getElementById('pollQuestion').focus();
+    }
+
+    closePollCreationModal() {
+        document.getElementById('pollCreationModal').classList.add('hidden');
+        this.isCreatingForcedPoll = false;
+    }
+
+    addPollOption() {
+        const container = document.getElementById('pollOptionsContainer');
+        const count = container.querySelectorAll('.poll-option-input').length;
+        const newOption = document.createElement('div');
+        newOption.className = 'poll-option-input';
+        newOption.innerHTML = `
+            <input type="text" placeholder="Option ${count + 1}" class="input-field poll-option" maxlength="100">
+            <button class="btn" onclick="if(this.parentElement) this.parentElement.remove()">Remove</button>
+        `;
+        container.appendChild(newOption);
+    }
+
+    async createPoll() {
+        if (!this.currentChat) return;
+        
+        const question = document.getElementById('pollQuestion').value.trim();
+        const errorEl = document.getElementById('pollCreationError');
+        errorEl.textContent = '';
+
+        if (!question) {
+            errorEl.textContent = 'Please enter a question';
+            return;
+        }
+
+        const optionInputs = document.querySelectorAll('.poll-option');
+        const options = Array.from(optionInputs).map(el => el.value.trim()).filter(v => v);
+
+        if (options.length < 2) {
+            errorEl.textContent = 'Please enter at least 2 options';
+            return;
+        }
+
+        try {
+            const pollId = 'poll_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const pollData = {
+                id: pollId,
+                question: question,
+                options: options,
+                creator: this.currentUser.username,
+                timestamp: new Date().toISOString(),
+                isForced: this.isCreatingForcedPoll || false,
+                votes: {},
+                voters: {}
+            };
+
+            // Initialize votes for each option
+            options.forEach(opt => {
+                pollData.votes[opt] = 0;
+            });
+
+            // Save poll to database
+            if (this.currentChatType === 'room') {
+                await this.db.ref('roomPolls/' + this.currentChat + '/' + pollId).set(pollData);
+            } else {
+                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                await this.db.ref('polls/' + key + '/' + pollId).set(pollData);
+            }
+
+            // Send poll message
+            const pollMessage = {
+                type: 'poll',
+                pollId: pollId,
+                question: question,
+                options: options,
+                creator: this.currentUser.username,
+                timestamp: new Date().toISOString(),
+                isForced: this.isCreatingForcedPoll || false
+            };
+
+            if (this.currentChatType === 'room') {
+                await this.saveRoomMessage(this.currentChat, this.currentUser.username, pollMessage);
+            } else {
+                await this.saveMessage(this.currentUser.username, this.currentChat, pollMessage);
+            }
+
+            this.closePollCreationModal();
+
+            // If forced poll, display overlay
+            if (this.isCreatingForcedPoll) {
+                this.showForcedPollOverlay(pollId, question, options);
+            }
+        } catch (err) {
+            errorEl.textContent = 'Error creating poll: ' + err.message;
+        }
+    }
+
+    showForcedPollOverlay(pollId, question, options) {
+        document.getElementById('forcedPollQuestion').textContent = question;
+        const optionsContainer = document.getElementById('forcedPollOptions');
+        optionsContainer.innerHTML = '';
+
+        options.forEach((option, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'forced-poll-option';
+            btn.textContent = option;
+            btn.onclick = () => this.voteForcedPoll(pollId, option, options, index);
+            optionsContainer.appendChild(btn);
+        });
+
+        document.getElementById('forcedPollOverlay').classList.remove('hidden');
+    }
+
+    async voteForcedPoll(pollId, selectedOption, options, optionIndex) {
+        await this.votePoll(pollId, selectedOption);
+        document.getElementById('forcedPollOverlay').classList.add('hidden');
+    }
+
+    async votePoll(pollId, selectedOption) {
+        if (!this.currentChat) return;
+
+        try {
+            const voterId = this.currentUser.username;
+            let pollRef;
+
+            if (this.currentChatType === 'room') {
+                pollRef = this.db.ref('roomPolls/' + this.currentChat + '/' + pollId);
+            } else {
+                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                pollRef = this.db.ref('polls/' + key + '/' + pollId);
+            }
+
+            const snap = await pollRef.get();
+            if (!snap.exists()) return;
+
+            const pollData = snap.val();
+
+            // Check if already voted
+            if (pollData.voters && pollData.voters[voterId]) {
+                const previousVote = pollData.voters[voterId];
+                if (pollData.votes[previousVote] > 0) {
+                    pollData.votes[previousVote]--;
+                }
+            }
+
+            // Add new vote
+            pollData.votes[selectedOption] = (pollData.votes[selectedOption] || 0) + 1;
+            pollData.voters[voterId] = selectedOption;
+
+            await pollRef.set(pollData);
+
+            // Update UI
+            this.updatePollDisplay(pollId);
+        } catch (err) {
+            console.error('Error voting on poll:', err);
+        }
+    }
+
+    updatePollDisplay(pollId) {
+        const pollElements = document.querySelectorAll(`[data-poll-id="${pollId}"]`);
+        pollElements.forEach(el => {
+            // Refresh the poll display
+            const pollContainer = el.closest('.poll-container');
+            if (pollContainer) {
+                // This will be triggered by message refresh
+            }
+        });
+    }
+
+    renderPollInChat(msg, msgDiv) {
+        const pollContainer = document.createElement('div');
+        pollContainer.className = 'poll-container';
+        pollContainer.setAttribute('data-poll-id', msg.pollId);
+
+        const header = document.createElement('div');
+        header.className = 'poll-header';
+        const title = document.createElement('strong');
+        title.className = 'poll-title';
+        title.textContent = msg.question;
+        const creator = document.createElement('span');
+        creator.className = 'poll-creator';
+        creator.textContent = 'by @' + msg.creator;
+        header.appendChild(title);
+        header.appendChild(creator);
+
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'poll-options';
+
+        // Load current votes for this poll
+        this.getPollVotes(msg.pollId, pollContainer, optionsDiv, msg.options);
+
+        pollContainer.appendChild(header);
+        pollContainer.appendChild(optionsDiv);
+
+        const stats = document.createElement('div');
+        stats.className = 'poll-stats';
+        const votesCount = document.createElement('span');
+        votesCount.className = 'poll-votes-count';
+        votesCount.textContent = 'Total votes: ';
+        const totalSpan = document.createElement('span');
+        totalSpan.className = 'poll-total';
+        totalSpan.textContent = '0';
+        votesCount.appendChild(totalSpan);
+        const status = document.createElement('span');
+        status.className = 'poll-status';
+        status.textContent = 'Open';
+        stats.appendChild(votesCount);
+        stats.appendChild(status);
+
+        pollContainer.appendChild(stats);
+        msgDiv.appendChild(pollContainer);
+
+        // Listen for real-time updates
+        this.listenToPollUpdates(msg.pollId, optionsDiv, stats, msg.options);
+    }
+
+    async getPollVotes(pollId, pollContainer, optionsDiv, options) {
+        try {
+            let pollRef;
+            if (this.currentChatType === 'room') {
+                pollRef = this.db.ref('roomPolls/' + this.currentChat + '/' + pollId);
+            } else {
+                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                pollRef = this.db.ref('polls/' + key + '/' + pollId);
+            }
+
+            const snap = await pollRef.get();
+            if (!snap.exists()) return;
+
+            const pollData = snap.val();
+            const votes = pollData.votes || {};
+            const voters = pollData.voters || {};
+            const currentUserVote = voters[this.currentUser.username];
+
+            let totalVotes = 0;
+            Object.values(votes).forEach(v => totalVotes += v);
+
+            optionsDiv.innerHTML = '';
+            options.forEach(option => {
+                const optionVotes = votes[option] || 0;
+                const percent = totalVotes > 0 ? ((optionVotes / totalVotes) * 100).toFixed(1) : 0;
+
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'poll-option';
+                if (currentUserVote === option) {
+                    optionDiv.classList.add('voted');
+                }
+                optionDiv.onclick = () => this.votePoll(pollId, option);
+
+                const textDiv = document.createElement('div');
+                textDiv.className = 'poll-option-text';
+                textDiv.textContent = option;
+
+                optionDiv.appendChild(textDiv);
+
+                const bar = document.createElement('div');
+                bar.className = 'poll-option-bar';
+                const fill = document.createElement('div');
+                fill.className = 'poll-option-fill';
+                fill.style.width = percent + '%';
+                bar.appendChild(fill);
+                optionDiv.appendChild(bar);
+
+                const percentDiv = document.createElement('div');
+                percentDiv.className = 'poll-option-percent';
+                percentDiv.textContent = optionVotes + ' votes (' + percent + '%)';
+                optionDiv.appendChild(percentDiv);
+
+                optionsDiv.appendChild(optionDiv);
+            });
+
+            const totalSpan = pollContainer.querySelector('.poll-total');
+            if (totalSpan) totalSpan.textContent = totalVotes;
+        } catch (err) {
+            console.error('Error loading poll votes:', err);
+        }
+    }
+
+    listenToPollUpdates(pollId, optionsDiv, stats, options) {
+        try {
+            let pollRef;
+            if (this.currentChatType === 'room') {
+                pollRef = this.db.ref('roomPolls/' + this.currentChat + '/' + pollId);
+            } else {
+                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                pollRef = this.db.ref('polls/' + key + '/' + pollId);
+            }
+
+            pollRef.on('value', (snap) => {
+                if (!snap.exists()) return;
+                const pollData = snap.val();
+                const votes = pollData.votes || {};
+                const voters = pollData.voters || {};
+                const currentUserVote = voters[this.currentUser.username];
+
+                let totalVotes = 0;
+                Object.values(votes).forEach(v => totalVotes += v);
+
+                optionsDiv.innerHTML = '';
+                options.forEach(option => {
+                    const optionVotes = votes[option] || 0;
+                    const percent = totalVotes > 0 ? ((optionVotes / totalVotes) * 100).toFixed(1) : 0;
+
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'poll-option';
+                    if (currentUserVote === option) {
+                        optionDiv.classList.add('voted');
+                    }
+                    optionDiv.onclick = () => this.votePoll(pollId, option);
+
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'poll-option-text';
+                    textDiv.textContent = option;
+
+                    optionDiv.appendChild(textDiv);
+
+                    const bar = document.createElement('div');
+                    bar.className = 'poll-option-bar';
+                    const fill = document.createElement('div');
+                    fill.className = 'poll-option-fill';
+                    fill.style.width = percent + '%';
+                    bar.appendChild(fill);
+                    optionDiv.appendChild(bar);
+
+                    const percentDiv = document.createElement('div');
+                    percentDiv.className = 'poll-option-percent';
+                    percentDiv.textContent = optionVotes + ' votes (' + percent + '%)';
+                    optionDiv.appendChild(percentDiv);
+
+                    optionsDiv.appendChild(optionDiv);
+                });
+
+                const totalSpan = stats.querySelector('.poll-total');
+                if (totalSpan) totalSpan.textContent = totalVotes;
+            });
+        } catch (err) {
+            console.error('Error listening to poll updates:', err);
+        }
+    }
 }
 
 // =====================
@@ -2289,6 +2677,9 @@ function closeQrImportModal() { if (app) app.closeQrImportModal(); }
 function closeHelpModal() { if (app) app.closeHelpModal(); }
 function closeMembersModal() { if (app) app.closeMembersModal(); }
 function closeSpyModal() { if (app) app.closeSpyModal(); }
+function closePollCreationModal() { if (app) app.closePollCreationModal(); }
+function addPollOption() { if (app) app.addPollOption(); }
+function createPoll() { if (app) app.createPoll(); }
 function toggleSpy() {
     const el = document.getElementById('spyCollapsible');
     const icon = document.getElementById('spyToggleIcon');

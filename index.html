@@ -259,6 +259,54 @@
                 </div>
             </div>
         </div>
+
+        <!-- Poll Creation Modal -->
+        <div id="pollCreationModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Create Poll</h2>
+                    <button class="modal-close" onclick="closePollCreationModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="pollQuestion" placeholder="Question" class="input-field" maxlength="200">
+                    <div id="pollOptionsContainer">
+                        <div class="poll-option-input">
+                            <input type="text" placeholder="Option 1" class="input-field poll-option" maxlength="100">
+                        </div>
+                        <div class="poll-option-input">
+                            <input type="text" placeholder="Option 2" class="input-field poll-option" maxlength="100">
+                        </div>
+                    </div>
+                    <button id="addPollOptionBtn" class="btn btn-secondary" onclick="addPollOption()">+ Add Option</button>
+                    <button id="createPollBtn" class="btn btn-primary" onclick="createPoll()">Create Poll</button>
+                    <div id="pollCreationError" class="error-message"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Poll Voting Modal (Forced) -->
+        <div id="forcedPollOverlay" class="forced-poll-overlay hidden">
+            <div id="forcedPollContent" class="forced-poll-container">
+                <h2 id="forcedPollQuestion">Poll Question</h2>
+                <div id="forcedPollOptions" class="forced-poll-options"></div>
+                <p id="forcedPollMessage" class="forced-poll-message">You must vote to continue</p>
+            </div>
+        </div>
+
+        <!-- Poll Display In-Chat -->
+        <div id="pollDisplayTemplate" style="display:none;">
+            <div class="poll-container">
+                <div class="poll-header">
+                    <strong class="poll-title"></strong>
+                    <span class="poll-creator"></span>
+                </div>
+                <div class="poll-options"></div>
+                <div class="poll-stats">
+                    <span class="poll-votes-count">Total votes: <span class="poll-total">0</span></span>
+                    <span class="poll-status">Open</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
