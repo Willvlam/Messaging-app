@@ -1189,6 +1189,8 @@ class MessagingApp {
             e.stopPropagation();
             this.toggleEmojiPicker();
         });
+        document.getElementById('createPollBtn')?.addEventListener('click', () => this.createPoll());
+        document.getElementById('addPollOptionBtn')?.addEventListener('click', () => this.addPollOption());
         document.addEventListener('click', (e) => {
             const picker = document.getElementById('emojiPicker');
             const btn = document.getElementById('emojiBtn');
@@ -2326,35 +2328,29 @@ class MessagingApp {
     }
 
     async createPoll() {
-        console.log('createPoll called');
         const question = document.getElementById('pollQuestion').value.trim();
         const errorEl = document.getElementById('pollCreationError');
         errorEl.textContent = '';
 
         if (!question) {
             errorEl.textContent = 'Please enter a question';
-            console.log('No question entered');
             return;
         }
 
         if (!this.currentChat) {
             errorEl.textContent = 'Please open a chat first';
-            console.log('No chat selected:', this.currentChat);
             return;
         }
 
         const optionInputs = document.querySelectorAll('.poll-option');
         const options = Array.from(optionInputs).map(el => el.value.trim()).filter(v => v);
-        console.log('Poll options:', options);
 
         if (options.length < 2) {
             errorEl.textContent = 'Please enter at least 2 options';
-            console.log('Not enough options');
             return;
         }
 
         try {
-            console.log('Creating poll...');
             const pollId = 'poll_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             const pollData = {
                 id: pollId,
@@ -2399,7 +2395,6 @@ class MessagingApp {
                 await this.saveMessage(this.currentUser.username, this.currentChat, pollMessage);
             }
 
-            console.log('Poll created successfully');
             this.closePollCreationModal();
 
             // If forced poll, display overlay
@@ -2407,7 +2402,6 @@ class MessagingApp {
                 this.showForcedPollOverlay(pollId, question, options);
             }
         } catch (err) {
-            console.error('Error creating poll:', err);
             errorEl.textContent = 'Error creating poll: ' + err.message;
         }
     }
@@ -2578,9 +2572,6 @@ class MessagingApp {
             if (currentUserVote === option) {
                 optionDiv.classList.add('voted');
             }
-            
-            // Use bind to ensure 'this' context is preserved
-            optionDiv.onclick = this.votePoll.bind(this, pollId, option);
 
             const textDiv = document.createElement('div');
             textDiv.className = 'poll-option-text';
@@ -2599,6 +2590,19 @@ class MessagingApp {
             percentDiv.className = 'poll-option-percent';
             percentDiv.textContent = optionVotes + ' votes (' + percent + '%)';
             optionDiv.appendChild(percentDiv);
+
+            // Add vote button
+            const voteBtn = document.createElement('button');
+            voteBtn.className = 'poll-vote-btn';
+            voteBtn.textContent = currentUserVote === option ? '✓ Voted' : 'Vote';
+            voteBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.votePoll(pollId, option);
+            };
+            if (currentUserVote === option) {
+                voteBtn.disabled = true;
+            }
+            optionDiv.appendChild(voteBtn);
 
             optionsDiv.appendChild(optionDiv);
         });
