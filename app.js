@@ -219,6 +219,8 @@ class MessagingApp {
         this.audioStream = null;
         this.recordingChunks = [];
         this.isRecordingAudio = false;
+        this.isCreatingForcedPoll = false;
+        this.activePollListeners = {};
         this.loadCurrentUser();
         this.initializeEventListeners();
         this.render();
@@ -2367,7 +2369,9 @@ class MessagingApp {
             if (this.currentChatType === 'room') {
                 await this.db.ref('roomPolls/' + this.currentChat + '/' + pollId).set(pollData);
             } else {
-                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                // For DM polls, use a shared key that both users can access
+                const users = [this.currentUser.username, this.currentChat].sort();
+                const key = users.join('_');
                 await this.db.ref('polls/' + key + '/' + pollId).set(pollData);
             }
 
@@ -2430,12 +2434,17 @@ class MessagingApp {
             if (this.currentChatType === 'room') {
                 pollRef = this.db.ref('roomPolls/' + this.currentChat + '/' + pollId);
             } else {
-                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                // For DM polls, use a shared key that both users can access
+                const users = [this.currentUser.username, this.currentChat].sort();
+                const key = users.join('_');
                 pollRef = this.db.ref('polls/' + key + '/' + pollId);
             }
 
             const snap = await pollRef.get();
-            if (!snap.exists()) return;
+            if (!snap.exists()) {
+                console.log('Poll not found:', pollId);
+                return;
+            }
 
             const pollData = snap.val();
 
@@ -2452,9 +2461,6 @@ class MessagingApp {
             pollData.voters[voterId] = selectedOption;
 
             await pollRef.set(pollData);
-
-            // Update UI
-            this.updatePollDisplay(pollId);
         } catch (err) {
             console.error('Error voting on poll:', err);
         }
@@ -2490,12 +2496,6 @@ class MessagingApp {
         const optionsDiv = document.createElement('div');
         optionsDiv.className = 'poll-options';
 
-        // Load current votes for this poll
-        this.getPollVotes(msg.pollId, pollContainer, optionsDiv, msg.options);
-
-        pollContainer.appendChild(header);
-        pollContainer.appendChild(optionsDiv);
-
         const stats = document.createElement('div');
         stats.className = 'poll-stats';
         const votesCount = document.createElement('span');
@@ -2511,135 +2511,91 @@ class MessagingApp {
         stats.appendChild(votesCount);
         stats.appendChild(status);
 
+        pollContainer.appendChild(header);
+        pollContainer.appendChild(optionsDiv);
         pollContainer.appendChild(stats);
         msgDiv.appendChild(pollContainer);
 
-        // Listen for real-time updates
-        this.listenToPollUpdates(msg.pollId, optionsDiv, stats, msg.options);
+        // Load current votes and set up real-time listener
+        this.loadAndListenToPoll(msg.pollId, optionsDiv, stats, msg.options);
     }
 
-    async getPollVotes(pollId, pollContainer, optionsDiv, options) {
+    async loadAndListenToPoll(pollId, optionsDiv, stats, options) {
         try {
             let pollRef;
             if (this.currentChatType === 'room') {
                 pollRef = this.db.ref('roomPolls/' + this.currentChat + '/' + pollId);
             } else {
-                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
+                // For DM polls, both users can view, so we need a shared key
+                const users = [this.currentUser.username, this.currentChat].sort();
+                const key = users.join('_');
                 pollRef = this.db.ref('polls/' + key + '/' + pollId);
             }
 
+            // Load initial data
             const snap = await pollRef.get();
-            if (!snap.exists()) return;
+            const pollData = snap.exists() ? snap.val() : { votes: {}, voters: {} };
+            this.renderPollOptions(pollData, options, optionsDiv, stats, pollId);
 
-            const pollData = snap.val();
-            const votes = pollData.votes || {};
-            const voters = pollData.voters || {};
-            const currentUserVote = voters[this.currentUser.username];
-
-            let totalVotes = 0;
-            Object.values(votes).forEach(v => totalVotes += v);
-
-            optionsDiv.innerHTML = '';
-            options.forEach(option => {
-                const optionVotes = votes[option] || 0;
-                const percent = totalVotes > 0 ? ((optionVotes / totalVotes) * 100).toFixed(1) : 0;
-
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'poll-option';
-                if (currentUserVote === option) {
-                    optionDiv.classList.add('voted');
-                }
-                optionDiv.onclick = () => this.votePoll(pollId, option);
-
-                const textDiv = document.createElement('div');
-                textDiv.className = 'poll-option-text';
-                textDiv.textContent = option;
-
-                optionDiv.appendChild(textDiv);
-
-                const bar = document.createElement('div');
-                bar.className = 'poll-option-bar';
-                const fill = document.createElement('div');
-                fill.className = 'poll-option-fill';
-                fill.style.width = percent + '%';
-                bar.appendChild(fill);
-                optionDiv.appendChild(bar);
-
-                const percentDiv = document.createElement('div');
-                percentDiv.className = 'poll-option-percent';
-                percentDiv.textContent = optionVotes + ' votes (' + percent + '%)';
-                optionDiv.appendChild(percentDiv);
-
-                optionsDiv.appendChild(optionDiv);
-            });
-
-            const totalSpan = pollContainer.querySelector('.poll-total');
-            if (totalSpan) totalSpan.textContent = totalVotes;
+            // Set up real-time listener
+            if (!this.activePollListeners[pollId]) {
+                this.activePollListeners[pollId] = pollRef.on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const updatedData = snapshot.val();
+                        this.renderPollOptions(updatedData, options, optionsDiv, stats, pollId);
+                    }
+                });
+            }
         } catch (err) {
-            console.error('Error loading poll votes:', err);
+            console.error('Error loading poll:', err);
         }
     }
 
-    listenToPollUpdates(pollId, optionsDiv, stats, options) {
-        try {
-            let pollRef;
-            if (this.currentChatType === 'room') {
-                pollRef = this.db.ref('roomPolls/' + this.currentChat + '/' + pollId);
-            } else {
-                const key = this.getConversationKey(this.currentUser.username, this.currentChat);
-                pollRef = this.db.ref('polls/' + key + '/' + pollId);
+    renderPollOptions(pollData, options, optionsDiv, stats, pollId) {
+        const votes = pollData.votes || {};
+        const voters = pollData.voters || {};
+        const currentUserVote = voters[this.currentUser.username];
+
+        let totalVotes = 0;
+        Object.values(votes).forEach(v => totalVotes += (typeof v === 'number' ? v : 0));
+
+        optionsDiv.innerHTML = '';
+        options.forEach(option => {
+            const optionVotes = votes[option] || 0;
+            const percent = totalVotes > 0 ? ((optionVotes / totalVotes) * 100).toFixed(1) : 0;
+
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'poll-option';
+            if (currentUserVote === option) {
+                optionDiv.classList.add('voted');
             }
+            
+            // Use bind to ensure 'this' context is preserved
+            optionDiv.onclick = this.votePoll.bind(this, pollId, option);
 
-            pollRef.on('value', (snap) => {
-                if (!snap.exists()) return;
-                const pollData = snap.val();
-                const votes = pollData.votes || {};
-                const voters = pollData.voters || {};
-                const currentUserVote = voters[this.currentUser.username];
+            const textDiv = document.createElement('div');
+            textDiv.className = 'poll-option-text';
+            textDiv.textContent = option;
+            optionDiv.appendChild(textDiv);
 
-                let totalVotes = 0;
-                Object.values(votes).forEach(v => totalVotes += v);
+            const bar = document.createElement('div');
+            bar.className = 'poll-option-bar';
+            const fill = document.createElement('div');
+            fill.className = 'poll-option-fill';
+            fill.style.width = percent + '%';
+            bar.appendChild(fill);
+            optionDiv.appendChild(bar);
 
-                optionsDiv.innerHTML = '';
-                options.forEach(option => {
-                    const optionVotes = votes[option] || 0;
-                    const percent = totalVotes > 0 ? ((optionVotes / totalVotes) * 100).toFixed(1) : 0;
+            const percentDiv = document.createElement('div');
+            percentDiv.className = 'poll-option-percent';
+            percentDiv.textContent = optionVotes + ' votes (' + percent + '%)';
+            optionDiv.appendChild(percentDiv);
 
-                    const optionDiv = document.createElement('div');
-                    optionDiv.className = 'poll-option';
-                    if (currentUserVote === option) {
-                        optionDiv.classList.add('voted');
-                    }
-                    optionDiv.onclick = () => this.votePoll(pollId, option);
+            optionsDiv.appendChild(optionDiv);
+        });
 
-                    const textDiv = document.createElement('div');
-                    textDiv.className = 'poll-option-text';
-                    textDiv.textContent = option;
-
-                    optionDiv.appendChild(textDiv);
-
-                    const bar = document.createElement('div');
-                    bar.className = 'poll-option-bar';
-                    const fill = document.createElement('div');
-                    fill.className = 'poll-option-fill';
-                    fill.style.width = percent + '%';
-                    bar.appendChild(fill);
-                    optionDiv.appendChild(bar);
-
-                    const percentDiv = document.createElement('div');
-                    percentDiv.className = 'poll-option-percent';
-                    percentDiv.textContent = optionVotes + ' votes (' + percent + '%)';
-                    optionDiv.appendChild(percentDiv);
-
-                    optionsDiv.appendChild(optionDiv);
-                });
-
-                const totalSpan = stats.querySelector('.poll-total');
-                if (totalSpan) totalSpan.textContent = totalVotes;
-            });
-        } catch (err) {
-            console.error('Error listening to poll updates:', err);
-        }
+        const totalSpan = stats.querySelector('.poll-total');
+        if (totalSpan) totalSpan.textContent = totalVotes;
     }
 }
 
