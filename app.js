@@ -2,7 +2,7 @@
 // Patch Note — update this before each git push
 // =====================
 
-const PATCH_NOTE = 'added polls for everyone and fpolls for admins with handleing built in for errors and issues ';
+const PATCH_NOTE = 'added polls for everyone and fpolls for admins with handleing built in for errors and issues patched early issue with being put under a chat kill command :(';
 const MINI_GAMES = [
   { id: 'quick-tap', title: 'Quick Tap', description: 'Tap fast to reach 20 points.', mode: 'solo', goal: 20 },
   { id: 'guess-number', title: 'Guess Number', description: 'Guess a number between 1 and 10 and beat the computer.', mode: 'solo' },
@@ -1997,7 +1997,7 @@ class MessagingApp {
             return;
         }
 
-        // Poll commands
+        // Poll commands can work without a selected chat
         if (trimmed.toLowerCase() === '/poll') {
             this.showPollCreationModal(false);
             input.value = '';
@@ -2014,6 +2014,8 @@ class MessagingApp {
             input.value = '';
             return;
         }
+
+        if (!this.currentChat) return;
 
         const content = { type: 'text', text };
         if (this.replyingTo) {
