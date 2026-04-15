@@ -2430,7 +2430,11 @@ class MessagingApp {
     }
 
     async votePoll(pollId, selectedOption) {
-        if (!this.currentChat) return;
+        console.log('votePoll called with pollId:', pollId, 'option:', selectedOption);
+        if (!this.currentChat) {
+            console.log('No current chat selected');
+            return;
+        }
 
         try {
             const voterId = this.currentUser.username;
@@ -2445,6 +2449,7 @@ class MessagingApp {
                 pollRef = this.db.ref('polls/' + key + '/' + pollId);
             }
 
+            console.log('Fetching poll data from:', pollRef.path);
             const snap = await pollRef.get();
             if (!snap.exists()) {
                 console.log('Poll not found:', pollId);
@@ -2452,6 +2457,7 @@ class MessagingApp {
             }
 
             const pollData = snap.val();
+            console.log('Current poll data:', pollData);
 
             // Check if already voted
             if (pollData.voters && pollData.voters[voterId]) {
@@ -2465,7 +2471,9 @@ class MessagingApp {
             pollData.votes[selectedOption] = (pollData.votes[selectedOption] || 0) + 1;
             pollData.voters[voterId] = selectedOption;
 
+            console.log('Saving updated poll data:', pollData);
             await pollRef.set(pollData);
+            console.log('Vote saved successfully');
         } catch (err) {
             console.error('Error voting on poll:', err);
         }
@@ -2527,6 +2535,7 @@ class MessagingApp {
 
     async loadAndListenToPoll(pollId, optionsDiv, stats, options) {
         try {
+            console.log('loadAndListenToPoll called for pollId:', pollId);
             let pollRef;
             if (this.currentChatType === 'room') {
                 pollRef = this.db.ref('roomPolls/' + this.currentChat + '/' + pollId);
@@ -2540,13 +2549,16 @@ class MessagingApp {
             // Load initial data
             const snap = await pollRef.get();
             const pollData = snap.exists() ? snap.val() : { votes: {}, voters: {} };
+            console.log('Initial poll data loaded:', pollData);
             this.renderPollOptions(pollData, options, optionsDiv, stats, pollId);
 
             // Set up real-time listener
             if (!this.activePollListeners[pollId]) {
+                console.log('Setting up real-time listener for poll:', pollId);
                 this.activePollListeners[pollId] = pollRef.on('value', (snapshot) => {
                     if (snapshot.exists()) {
                         const updatedData = snapshot.val();
+                        console.log('Poll updated:', pollId, updatedData);
                         this.renderPollOptions(updatedData, options, optionsDiv, stats, pollId);
                     }
                 });
@@ -2599,6 +2611,7 @@ class MessagingApp {
             voteBtn.className = 'poll-vote-btn btn btn-small';
             voteBtn.textContent = currentUserVote === option ? '✓ Voted' : 'Vote';
             voteBtn.onclick = (e) => {
+                console.log('Vote button clicked for option:', option, 'pollId:', pollId);
                 e.stopPropagation();
                 this.votePoll(pollId, option);
             };
