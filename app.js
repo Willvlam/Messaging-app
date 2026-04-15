@@ -2314,25 +2314,19 @@ class MessagingApp {
     }
 
     addPollOption() {
-        try {
-            alert('Add Option button clicked!'); // Debug alert
-            const container = document.getElementById('pollOptionsContainer');
-            const count = container.querySelectorAll('.poll-option-input').length;
-            const newOption = document.createElement('div');
-            newOption.className = 'poll-option-input';
-            newOption.innerHTML = `
-                <input type="text" placeholder="Option ${count + 1}" class="input-field poll-option" maxlength="100">
-                <button class="btn" onclick="if(this.parentElement) this.parentElement.remove()">Remove</button>
-            `;
-            container.appendChild(newOption);
-        } catch (e) {
-            alert('Error in addPollOption: ' + e.message);
-        }
+        const container = document.getElementById('pollOptionsContainer');
+        const count = container.querySelectorAll('.poll-option-input').length;
+        const newOption = document.createElement('div');
+        newOption.className = 'poll-option-input';
+        newOption.innerHTML = `
+            <input type="text" placeholder="Option ${count + 1}" class="input-field poll-option" maxlength="100">
+            <button class="btn" onclick="if(this.parentElement) this.parentElement.remove()">Remove</button>
+        `;
+        container.appendChild(newOption);
     }
 
     async createPoll() {
         try {
-            alert('Create Poll button clicked!'); // Debug alert
             const question = document.getElementById('pollQuestion').value.trim();
             const errorEl = document.getElementById('pollCreationError');
             errorEl.textContent = '';
@@ -2347,15 +2341,17 @@ class MessagingApp {
                 return;
             }
 
-            const optionInputs = document.querySelectorAll('.poll-option');
-            const options = Array.from(optionInputs).map(el => el.value.trim()).filter(v => v);
+            const optionInputs = document.querySelectorAll('#pollCreationModal .poll-option');
+            const options = Array.from(optionInputs)
+                .filter(el => el && typeof el.value === 'string')
+                .map(el => el.value.trim())
+                .filter(v => v);
 
             if (options.length < 2) {
                 errorEl.textContent = 'Please enter at least 2 options';
                 return;
             }
 
-            alert('About to create poll...'); // Debug alert
             const pollId = 'poll_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             const pollData = {
                 id: pollId,
