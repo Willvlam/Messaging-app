@@ -2396,7 +2396,6 @@ class MessagingApp {
                 await this.saveMessage(this.currentUser.username, this.currentChat, pollMessage);
             }
 
-            alert('Poll created! Closing modal...'); // Debug alert
             this.closePollCreationModal();
 
             // If forced poll, display overlay
@@ -2404,7 +2403,8 @@ class MessagingApp {
                 this.showForcedPollOverlay(pollId, question, options);
             }
         } catch (err) {
-            alert('ERROR: ' + err.message);
+            console.error('Poll creation error:', err);
+            document.getElementById('pollCreationError').textContent = 'Failed to create poll. Please try again.';
         }
     }
 
@@ -2595,7 +2595,8 @@ class MessagingApp {
 
             // Add vote button
             const voteBtn = document.createElement('button');
-            voteBtn.className = 'poll-vote-btn';
+            voteBtn.type = 'button';
+            voteBtn.className = 'poll-vote-btn btn btn-small';
             voteBtn.textContent = currentUserVote === option ? '✓ Voted' : 'Vote';
             voteBtn.onclick = (e) => {
                 e.stopPropagation();
