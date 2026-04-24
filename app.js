@@ -225,7 +225,6 @@ class MessagingApp {
         this.initializeEventListeners();
         this.render();
         showEmojiCategory('smileys');
-        this.cleanupOldMessages();
     }
 
     loadCurrentUser() {
@@ -568,8 +567,7 @@ class MessagingApp {
     async cleanupOldMessages() {
         const lastCleanup = sessionStorage.getItem('lastCleanup');
         const now = Date.now();
-        if (lastCleanup && now - parseInt(lastCleanup) < 24 * 60 * 60 * 1000) return; // once per day
-        sessionStorage.setItem('lastCleanup', now.toString());
+        if (lastCleanup && now - parseInt(lastCleanup) < 6 * 60 * 60 * 1000) return; 
         const KEEP = 50;
 
         // Prune: only delete messages beyond the last 50 — no age cutoff since storage is tiny
@@ -592,6 +590,8 @@ class MessagingApp {
         // This spreads cleanup naturally as people use the app
         try {
             if (this.currentChat) {
+                sessionStorage.setItem('lastCleanup', now.toString());
+              
                 if (this.currentChatType === 'room') {
                     await pruneRef(this.db.ref('rooms/' + this.currentChat + '/messages'));
                 } else {
@@ -852,11 +852,17 @@ class MessagingApp {
         this.currentChatType = type;
         this.replyingTo = null;
         this.closeEmojiPicker();
+
         if (type === 'room' && this.currentUser.username.toLowerCase() === 'willvlam') {
             await this.db.ref('userRooms/Willvlam/' + name).set(true);
         }
+
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = '<div class="loading-chat"><h2>Loading Chat...</h2></div>';
+
+        await this.updateChatView();
         this.attachMessageListener();
-        await this.updateAppUI();
+        this.cleanupOldMessages();
     }
 
     async updateChatView() {
